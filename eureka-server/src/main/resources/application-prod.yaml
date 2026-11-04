@@ -1,0 +1,10 @@
+server:
+  port: ${EUREKA_PORT:8761}
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # prod: proteger el registro ante fallos de red transitorios
+    enable-self-preservation: true

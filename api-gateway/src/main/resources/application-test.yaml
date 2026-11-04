@@ -1,0 +1,29 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: ms-proveedor
+              uri: lb://MS-PROVEEDOR
+              predicates:
+                - Path=/api/proveedores/**
+            - id: ms-producto
+              uri: lb://MS-PRODUCTO
+              predicates:
+                - Path=/api/productos/**
+            - id: ms-compra
+              uri: lb://MS-COMPRA
+              predicates:
+                - Path=/api/compras/**
+      httpclient:
+        connect-timeout: 1000
+        response-timeout: 3s
+
+# Sin descubrimiento en pruebas automatizadas: no hay Eureka para resolver lb://
+eureka:
+  client:
+    enabled: false

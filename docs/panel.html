@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARQUI.LAB // Panel de Control — Microservicios</title>
+<style>
+:root{
+  --bg:#050905; --panel:#0b120b; --panel2:#101a10; --panel3:#151f15;
+  --border:#1f3320; --border2:#2c4a2f;
+  --neon:#39ff6a; --neon-dim:#1d7a33; --amber:#ffb000; --red:#ff4d4d; --cyan:#4de1ff; --magenta:#ff5df0;
+  --text:#c4f5cd; --dim:#5c8a63;
+  --glow:0 0 6px rgba(57,255,106,.55),0 0 18px rgba(57,255,106,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Cascadia Code','JetBrains Mono','Fira Code',Consolas,monospace;
+  font-size:13px; line-height:1.45; min-height:100vh;
+}
+/* scanlines + crt vibe */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  mix-blend-mode:multiply; opacity:.5;
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9998;
+  background:radial-gradient(120% 90% at 50% 10%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+
+/* ============ HEADER ============ */
+header.topbar{
+  border-bottom:1px solid var(--border2);
+  background:linear-gradient(180deg,#0d160d 0%,#0a110a 100%);
+  padding:10px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px;
+  position:sticky; top:0; z-index:100;
+}
+.brand{display:flex; align-items:center; gap:14px;}
+.ascii{ color:var(--neon); font-size:10px; line-height:1.1; white-space:pre; text-shadow:var(--glow); user-select:none;}
+.brand h1{font-size:16px; letter-spacing:2px; color:var(--neon); text-shadow:var(--glow); font-weight:700;}
+.brand h1 .blink{animation:blink 1.1s steps(1) infinite;}
+@keyframes blink{50%{opacity:0;}}
+.brand small{display:block; color:var(--dim); font-size:10px; letter-spacing:1px; margin-top:2px;}
+.top-right{display:flex; align-items:center; gap:14px;}
+.env-badge{
+  border:1px solid var(--amber); color:var(--amber); padding:3px 10px; border-radius:3px;
+  font-size:11px; letter-spacing:2px; box-shadow:0 0 10px rgba(255,176,0,.15);
+}
+.clock{color:var(--cyan); font-size:14px; min-width:86px; text-align:right; text-shadow:0 0 8px rgba(77,225,255,.4);}
+.services-pill{display:flex; align-items:center; gap:8px; font-size:11px; color:var(--dim); border:1px solid var(--border2); padding:4px 12px; border-radius:3px; background:var(--panel2);}
+.services-pill b{color:var(--neon); font-size:13px;}
+
+/* ============ NAV ============ */
+nav.sections{ display:flex; gap:2px; padding:8px 14px; border-bottom:1px solid var(--border); background:var(--panel); position:sticky; top:57px; z-index:99; overflow-x:auto;}
+nav.sections a{
+  color:var(--dim); text-decoration:none; font-size:11px; letter-spacing:1.5px; padding:6px 14px; border:1px solid transparent; border-radius:3px 3px 0 0; white-space:nowrap;
+}
+nav.sections a:hover{ color:var(--neon); border-color:var(--border2); background:var(--panel2);}
+
+/* ============ LAYOUT ============ */
+main{ max-width:1440px; margin:0 auto; padding:18px 16px 60px; display:flex; flex-direction:column; gap:18px;}
+section.card{
+  background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:16px 18px; position:relative;
+}
+section.card::before{
+  content:attr(data-index); position:absolute; top:10px; right:14px; color:var(--border2); font-size:26px; font-weight:800; opacity:.8; user-select:none;
+}
+.section-title{ display:flex; align-items:center; gap:12px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:10px;}
+.section-title h2{ font-size:14px; letter-spacing:3px; color:var(--neon); text-shadow:0 0 8px rgba(57,255,106,.35);}
+.section-title .tag{ font-size:9px; color:var(--amber); border:1px solid var(--amber); padding:2px 8px; border-radius:2px; letter-spacing:2px;}
+.hint{ color:var(--dim); font-size:11px; margin:-2px 0 12px;}
+code.inline{ background:var(--panel3); color:var(--cyan); padding:1px 6px; border-radius:2px; border:1px solid var(--border); font-size:11px;}
+
+/* ============ CONFIG ROW ============ */
+.config-row{ display:flex; flex-wrap:wrap; gap:10px 14px; align-items:end; background:var(--panel2); border:1px solid var(--border); padding:10px 14px; border-radius:4px;}
+.field{ display:flex; flex-direction:column; gap:4px;}
+.field label{ font-size:9px; letter-spacing:2px; color:var(--dim); text-transform:uppercase;}
+.field input, select, textarea{
+  background:var(--bg); border:1px solid var(--border2); color:var(--neon); padding:7px 10px; border-radius:3px; font-family:inherit; font-size:12px; min-width:180px; outline:none;
+}
+.field input:focus{ border-color:var(--neon); box-shadow:var(--glow); }
+button{
+  cursor:pointer; font-family:inherit; border:1px solid var(--border2); background:var(--panel2); color:var(--neon); padding:7px 14px; border-radius:3px; letter-spacing:1px; font-size:11px; transition:.15s;
+}
+button:hover{ border-color:var(--neon); color:#031; background:var(--neon); box-shadow:var(--glow);}
+button:disabled{ opacity:.35; cursor:not-allowed; }
+button.primary{ border-color:var(--neon); }
+button.danger{ border-color:var(--red); color:var(--red);}
+button.danger:hover{ background:var(--red); border-color:var(--red); color:#100; box-shadow:0 0 10px rgba(255,77,77,.4);}
+button.warn{ border-color:var(--amber); color:var(--amber);}
+button.warn:hover{ background:var(--amber); color:#100;}
+button.tiny{ padding:3px 8px; font-size:10px; }
+
+/* ============ SERVICE GRID ============ */
+.svc-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px;}
+.svc{
+  border:1px solid var(--border); background:var(--panel2); border-radius:4px; padding:12px; position:relative; transition:.2s;
+}
+.svc:hover{ border-color:var(--border2); transform:translateY(-2px);}
+.svc .head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.svc .name{ font-size:13px; letter-spacing:2px; color:#eaffea;}
+.led{ width:12px; height:12px; border-radius:50%; background:#333; box-shadow:inset 0 0 3px #000;}
+.led.on{ background:var(--neon); box-shadow:var(--glow); animation:ledpulse 2s ease-in-out infinite; }
+@keyframes ledpulse{ 50%{ box-shadow:0 0 14px rgba(57,255,106,.9); } }
+.led.off{ background:var(--red); box-shadow:0 0 10px rgba(255,77,77,.6);}
+.svc .meta{ color:var(--dim); font-size:10px; display:flex; flex-direction:column; gap:3px;}
+.svc .meta b{ color:var(--cyan); }
+.svc .url{ font-size:11px; color:var(--neon); word-break:break-all; background:var(--bg); border:1px solid var(--border); padding:4px 6px; border-radius:2px; margin:8px 0;}
+.svc-footer{ display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:8px; font-size:10px; color:var(--dim);}
+.db-tag{ color:var(--amber); font-size:9px; letter-spacing:1px;}
+
+/* ============ ENDPOINTS TABLE ============ */
+.tabs{ display:flex; gap:4px; margin-bottom:10px; flex-wrap:wrap;}
+.tab{ font-size:11px; color:var(--dim); padding:6px 14px; border:1px solid var(--border2); border-radius:3px; letter-spacing:1px;}
+.tab.active{ color:#031; background:var(--neon); border-color:var(--neon); box-shadow:var(--glow);}
+.search{ margin-left:auto; }
+table.api{ width:100%; border-collapse:collapse; font-size:11px;}
+table.api th, table.api td{ padding:7px 8px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top;}
+table.api th{ color:var(--amber); font-size:9px; letter-spacing:2px; text-transform:uppercase; border-bottom:1px solid var(--border2);}
+table.api tr:hover td{ background:rgba(57,255,106,.04); }
+.method{ display:inline-block; min-width:52px; text-align:center; padding:2px 6px; border-radius:2px; font-size:10px; font-weight:700; letter-spacing:1px; border:1px solid;}
+.m-get{ color:var(--cyan); border-color:var(--cyan);}
+.m-post{ color:var(--neon); border-color:var(--neon);}
+.m-put{ color:var(--amber); border-color:var(--amber);}
+.m-patch{ color:var(--magenta); border-color:var(--magenta);}
+.m-delete{ color:var(--red); border-color:var(--red);}
+.curl-cell{ white-space:nowrap; }
+
+/* ============ RUNNER ============ */
+.runner-wrap{ display:grid; grid-template-columns:320px 1fr; gap:14px; }
+@media (max-width: 980px){ .runner-wrap{ grid-template-columns:1fr; } }
+.runner-controls{ display:flex; flex-direction:column; gap:10px; background:var(--panel2); border:1px solid var(--border); padding:12px; border-radius:4px;}
+.steps{ display:flex; flex-direction:column; gap:8px;}
+.step{ display:flex; align-items:center; gap:10px; border:1px solid var(--border); background:var(--bg); border-radius:3px; padding:7px 10px; transition:.25s; }
+.step .num{ color:var(--dim); font-weight:800; width:22px;}
+.step .lbl{ flex:1; font-size:11px;}
+.step .state{ font-size:9px; color:var(--dim); border:1px solid var(--border); padding:2px 6px; border-radius:2px;}
+.step.active{ border-color:var(--neon); box-shadow:var(--glow);}
+.step.active .num{ color:var(--neon);}
+.step.done{ border-color:var(--neon-dim); }
+.step.done .lbl{ color:var(--neon); }
+.step.done .state{ border-color:var(--neon-dim); color:var(--neon);}
+.stock-chip{ display:flex; justify-content:space-between; align-items:center; border:1px solid var(--border2); padding:8px 12px; border-radius:3px; background:var(--bg);}
+.stock-chip .lbl{ color:var(--dim); font-size:10px; letter-spacing:2px;}
+.stock-chip .val{ font-size:22px; color:var(--neon); text-shadow:var(--glow);}
+.console{
+  background:#020602; border:1px solid var(--border); border-radius:4px; min-height:340px; max-height:520px; overflow:auto; padding:10px; font-size:11px;
+}
+.console pre{ white-space:pre-wrap; word-break:break-word; }
+.log-line{ margin-bottom:2px; }
+.log-time{ color:var(--dim); }
+.log-ok{ color:var(--neon); }
+.log-err{ color:var(--red); }
+.log-info{ color:var(--cyan); }
+.log-warn{ color:var(--amber); }
+
+/* ============ AUDIT ============ */
+.audit-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
+.mini{ background:var(--panel2); border:1px solid var(--border); border-radius:4px; padding:12px 14px; }
+.mini h3{ font-size:10px; letter-spacing:2px; color:var(--amber); text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid var(--border); padding-bottom:6px;}
+.mini h3.green{ color:var(--neon); }
+.mini h3.red{ color:var(--red); }
+.mini h3.cyan{ color:var(--cyan); }
+.mini ul{ list-style:none; display:flex; flex-direction:column; gap:6px; }
+.mini li{ font-size:11px; padding-left:14px; position:relative; color:var(--text);}
+.mini li::before{ content:"»"; position:absolute; left:0; color:var(--neon); }
+.mini li small{ color:var(--dim); display:block; }
+.sev-tiles{ display:flex; gap:8px; flex-wrap:wrap; }
+.tile{ text-align:center; border-radius:4px; padding:10px 12px; min-width:78px; border:1px solid; }
+.tile b{ font-size:22px; display:block; }
+.tile span{ font-size:8px; letter-spacing:1px; text-transform:uppercase; }
+.t-crit{ border-color:var(--red); color:var(--red); }
+.t-alta{ border-color:#ff9f43; color:#ff9f43; }
+.t-media{ border-color:var(--amber); color:var(--amber); }
+.t-baja{ border-color:var(--cyan); color:var(--cyan); }
+.t-info{ border-color:var(--dim); color:var(--dim); }
+
+/* ============ FILES ============ */
+.files table{ width:100%; border-collapse:collapse; font-size:11px;}
+.files td{ padding:5px 8px; border-bottom:1px solid var(--border); }
+.files td:last-child{ white-space:nowrap; text-align:right;}
+
+footer{ border-top:1px solid var(--border); padding:10px 18px; text-align:center; color:var(--dim); font-size:10px; letter-spacing:2px; background:var(--panel); }
+footer b{ color:var(--neon); }
+.toast{ position:fixed; bottom:18px; right:18px; background:var(--panel2); border:1px solid var(--neon); color:var(--neon); padding:8px 16px; border-radius:3px; font-size:11px; z-index:10000; box-shadow:var(--glow); opacity:0; transform:translateY(8px); transition:.25s; pointer-events:none;}
+.toast.show{ opacity:1; transform:translateY(0); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="ascii">┌─┬─┐
+├─┼─┤
+└─┴─┘</div>
+    <div>
+      <h1>ARQUI.LAB<span class="blink">_</span></h1>
+      <small>ARQUITECTURA DE MICROSERVICIOS · PANEL DE CONTROL</small>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="services-pill">SERVICIOS <b id="upCount">–/5</b></div>
+    <div class="env-badge">LAB LOCAL</div>
+    <div class="clock" id="clock">00:00:00</div>
+  </div>
+</header>
+
+<nav class="sections">
+  <a href="#estado">01 · TOPOLOGÍA</a>
+  <a href="#endpoints">02 · ENDPOINTS</a>
+  <a href="#runner">03 · FLUJO RUNNER</a>
+  <a href="#auditoria">04 · SEGURIDAD</a>
+  <a href="#archivos">05 · ARCHIVOS</a>
+</nav>
+
+<main>
+
+<!-- CONFIG -->
+<div class="config-row">
+  <div class="field">
+    <label for="baseUrl">BASE URL (GATEWAY)</label>
+    <input id="baseUrl" type="text" value="http://localhost:8080" spellcheck="false">
+  </div>
+  <div class="field">
+    <label for="usuario">X-Usuario</label>
+    <input id="usuario" type="text" value="jose.orellana" spellcheck="false" style="min-width:140px">
+  </div>
+  <button id="btnTestConn" class="primary">▶ PROBAR PUERTA 8080</button>
+  <button id="btnPingAll" class="warn">◉ PING TODO</button>
+  <button id="btnClearConsole" class="tiny">LIMPIAR CONSOLA</button>
+</div>
+
+<!-- ============ 01 ESTADO ============ -->
+<section class="card" id="estado" data-index="01">
+  <div class="section-title"><h2>Topología y estado en vivo</h2><span class="tag">5 nodos · Eureka · dev</span></div>
+  <p class="hint">Click en <code class="inline">◉</code> para sondear cada nodo (petición <code class="inline">no-cors</code>: solo detecta UP/DOWN, no lee cuerpo). El Gateway y los 3 microservicios publican <code class="inline">X-Usuario</code> a través del <code class="inline">FeignHeaderInterceptor</code>.</p>
+  <div class="svc-grid" id="svcGrid"><!-- inyección JS --></div>
+</section>
+
+<!-- ============ 02 ENDPOINTS ============ -->
+<section class="card" id="endpoints" data-index="02">
+  <div class="section-title"><h2>Catálogo de endpoints (v1, siempre por el 8080)</h2><span class="tag">SIN STRIP PREFIX</span></div>
+  <div class="tabs" id="apiTabs"></div>
+  <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+    <input class="search" id="apiFilter" type="text" placeholder="filtrar endpoints… (p.ej. stock, anular, 404)" style="min-width:280px">
+    <span class="hint" style="margin:0">copiar <code class="inline">curl</code> a un clic</span>
+  </div>
+  <table class="api"><thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th><th></th></tr></thead><tbody id="apiBody"></tbody></table>
+</section>
+
+<!-- ============ 03 RUNNER ============ -->
+<section class="card" id="runner" data-index="03">
+  <div class="section-title"><h2>Flujo del laboratorio — runner en vivo</h2><span class="tag">REGISTRA → CONFIRMA → ANULA</span></div>
+  <p class="hint">Ejecuta el guion exacto de la sustentación. El panel autentícalo todo con <code class="inline">X-Usuario</code> del panel. Requiere Gateway accesible en el 8080 con CORS dev activo. Si un paso falla, la consola muestra el JSON del error.</p>
+
+  <div class="runner-wrap">
+    <div class="runner-controls">
+      <div class="field"><label for="rProveedorId">proveedorId</label><input id="rProveedorId" type="number" value="1" min="1"></div>
+      <div class="field"><label for="rProductoId">productoId</label><input id="rProductoId" type="number" value="1" min="1"></div>
+      <div class="field"><label for="rCantidad">cantidad</label><input id="rCantidad" type="number" value="3" min="1"></div>
+      <div class="field"><label for="rPrecio">precioUnitario</label><input id="rPrecio" type="number" value="12.50" min="0.01" step="0.01"></div>
+      <div class="field"><label for="rObs">observaciones</label><input id="rObs" type="text" maxlength="300" value="Runner del panel"></div>
+
+      <div class="stock-chip"><span class="lbl">STOCK ACTUAL PRODUCTO</span><span class="val" id="stockChip">—</span></div>
+
+      <div class="steps" id="stepsList"></div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+        <button id="step1Btn" class="primary">1 · REGISTRAR</button>
+        <button id="step2Btn" class="primary" disabled>2 · CONFIRMAR</button>
+        <button id="step3Btn" disabled>3 · STOCK ↓</button>
+        <button id="step4Btn" class="warn" disabled>4 · ANULAR</button>
+        <button id="step5Btn" disabled>5 · STOCK ↑</button>
+        <button id="step6Btn" disabled>6 · AUDITORÍA</button>
+      </div>
+      <button id="btnResetRunner" class="danger tiny">↺ REINICIAR RUNNER</button>
+    </div>
+
+    <div class="console" id="runnerConsole"><div class="log-line log-info"><span class="log-time">[boot]</span> Panel listo. Pulsa «1 · REGISTRAR» para iniciar el flujo.</div></div>
+  </div>
+</section>
+
+<!-- ============ 04 AUDITORIA ============ -->
+<section class="card" id="auditoria" data-index="04">
+  <div class="section-title"><h2>Informe de seguridad y auditoría (resumen)</h2><span class="tag">RED TEAM · ARQUITECTURA</span></div>
+  <p class="hint">Veredicto doble por control: <b>NIVEL LABORATORIO</b> (¿aceptable en el trabajo académico?) y <b>NIVEL BANCARIO/CRIPTO</b> (¿pasaría una auditoría de producción?). Informe completo: <code class="inline">docs/CONCLUSIONES_Y_SUSTENTACION.md</code>.</p>
+
+  <div class="audit-grid">
+    <div class="mini">
+      <h3 class="cyan">Hallazgos por severidad</h3>
+      <div class="sev-tiles">
+        <div class="tile t-crit"><b>6</b><span>Crítica</span></div>
+        <div class="tile t-alta"><b>8</b><span>Alta</span></div>
+        <div class="tile t-media"><b>14</b><span>Media</span></div>
+        <div class="tile t-baja"><b>12</b><span>Baja</span></div>
+        <div class="tile t-info"><b>15</b><span>Info</span></div>
+      </div>
+      <div style="margin-top:10px; font-size:11px; color:var(--dim);">Puntuación: Laboratorio <b style="color:var(--neon)">78/100</b> · Bancario <b style="color:var(--red)">32/100</b></div>
+    </div>
+
+    <div class="mini">
+      <h3 class="green">Qué está bien (verificado)</h3>
+      <ul>
+        <li>Lock pesimista nativo <code class="inline">SELECT … FOR UPDATE</code> en ms-producto (sin <code class="inline">FOR UPDATE OF</code> que rompía MariaDB).</li>
+        <li>Compensación al confirmar con <code class="inline">OPERACION_AL_CONFIRMAR.inversa()</code> si falla un producto (test: segundo producto).</li>
+        <li>Auditoría en la misma transacción (<code class="inline">@Transactional</code>) con quién hizo cada acción.</li>
+        <li>Formato de error idéntico en los 3 ms (<code class="inline">timestamp, status, error, message, path, details</code>), sin stack traces.</li>
+        <li>Validación Bean en cascada (<code class="inline">@Valid</code> en <code class="inline">detalles</code>; <code class="inline">cantidad ≥ 1</code>).</li>
+        <li>Manejador global: 400 JSON inválido / 404 / 409 / 503 / 500 genérico; JSON inválido ya da 400 (antes 500).</li>
+        <li>Mass assignment controlado: <code class="inline">estado</code>, <code class="inline">total</code> y <code class="inline">creadoPor</code> del cliente son ignorados (el servidor calcula <code class="inline">total = Σ subtotales</code> y controla el estado); <code class="inline">precioUnitario</code> sí viaja en el request — es el precio de compra. Verificado con POST con campos extra.</li>
+        <li>28 tests JUnit en verde (7 proveedor + 10 producto + 11 compra).</li>
+      </ul>
+    </div>
+
+    <div class="mini">
+      <h3 class="red">Qué NO está bien (para banco)</h3>
+      <ul>
+        <li>Sin autenticación ni autorización (no hay Spring Security). <small>Cualquiera que llegue al 8080 con papel y bolígrafo puede borrar proveedores.</small></li>
+        <li><code class="inline">X-Usuario</code> es un header de texto libre falsificable. <small>Repudio total: no hay no-repudio.</small></li>
+        <li>Acceso directo a 8081/8082/8083 saltando el Gateway. <small>Verificado: 200 con datos sin pasar por el gateway.</small></li>
+        <li>BD en <code class="inline">root</code> sin contraseña (dev). <small>Credenciales por defecto no aptas para producción.</small></li>
+        <li>HTTP plano cliente↔Gateway y servicio↔servicio; JDBC con <code class="inline">useSSL=false</code>.</li>
+        <li>PATCH <code class="inline">/api/productos/{id}/stock</code> expuesto públicamente por el Gateway. <small>Endpoint interno consumible por cualquiera.</small></li>
+        <li>Eureka dashboard abierto; sin auth de registro (instancia falsa posible).</li>
+        <li>Sin idempotencia: reenviar POST /api/compras duplica. <small>Riesgo de doble compra.</small></li>
+        <li>Sin rate limiting, circuit breaker ni mTLS.</li>
+      </ul>
+    </div>
+
+    <div class="mini">
+      <h3>Riesgos aceptados (sustentación)</h3>
+      <ul>
+        <li>Autenticación ausente <small>→ alcance académico; datos de prueba; entorno localhost.</small></li>
+        <li>HTTP plano <small>→ entorno local; no hay datos reales de clientes.</small></li>
+        <li><code class="inline">root</code> en BD <small>→ solo dev; prod usa <code class="inline">${DB_USER}</code> sin valor por defecto (arranca fallando si falta).</small></li>
+        <li>Idempotencia <small>→ no la exige la guía base; se documenta como mejora.</small></li>
+        <li>Eureka abierto <small>→ facilita la demo; en prod debe ir detrás de auth + red privada.</small></li>
+        <li>Sin rate limiting <small>→ volumen académico bajo; no hay DoS real en clase.</small></li>
+      </ul>
+    </div>
+
+    <div class="mini">
+      <h3 class="amber">Para producción bancaria/cripto</h3>
+      <ul>
+        <li>OAuth2/OIDC (JWT) en Gateway + <code class="inline">@PreAuthorize</code> por rol y por recurso (BOLA/BFLA).</li>
+        <li>mTLS entre servicios o service mesh; TLS end-to-end + JDBC seguro.</li>
+        <li>Idempotency-Key en POST + tabla de deduplicación.</li>
+        <li>Auditoría inmutable (append-only, firma, usuario BD sin UPDATE/DELETE).</li>
+        <li>Rate limiting + circuit breaker + bulkhead (Resilience4j).</li>
+        <li>Secretos fuera del código: Vault/KMS; <code class="inline">.gitignore</code> de secretos y Gitleaks en CI.</li>
+        <li>Cifrado en reposo (TDE) y de columnas PII (RUC, email, teléfono) — Ley N.° 29733.</li>
+        <li>SBOM (CycloneDX) + Dependency-Check/Trivy en pipeline; SIEM + trace-id.</li>
+      </ul>
+    </div>
+
+    <div class="mini">
+      <h3 class="green">Quick wins antes de presentar</h3>
+      <ul>
+        <li>Añadir <code class="inline">@Digits</code> y tope a <code class="inline">precio</code> y cantidades.</li>
+        <li>Sanitizar logs (CRLF) en <code class="inline">CompraServiceImpl</code>.</li>
+        <li>Paginación en listados (<code class="inline">Pageable</code> o slice).</li>
+        <li><code class="inline">NoResourceFoundException</code> → 404 (hoy un <code class="inline">/</code> inexistente da 500).</li>
+        <li>CORS abierto SOLO dev (<code class="inline">CorsDevConfig</code>) — hecho para este panel.</li>
+        <li><code class="inline">eureka.environment</code> → <code class="inline">lab</code> para que la etiqueta no diga «test».</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 ARCHIVOS ============ -->
+<section class="card files" id="archivos" data-index="05">
+  <div class="section-title"><h2>Artefactos del proyecto</h2><span class="tag">RUTAS</span></div>
+  <table>
+    <thead><tr><th>Archivo</th><th>Descripción</th><th></th></tr></thead>
+    <tbody id="fileBody"></tbody>
+  </table>
+</section>
+
+</main>
+
+<footer>
+  LAB04-JORD-2026 · <b>ORELLANA RODRIGUEZ JOSE MIGUEL</b> · ARQUITECTURA DE MICROSERVICIOS · SPRING BOOT 4.1.2 · JAVA 21 · <span id="footQuery">¿localhost:8080 oí?</span>
+</footer>
+
+<div id="toast" class="toast">copiado al portapapeles</div>
+
+<script>
+/* =====================================================
+   ARQUI.LAB — lógica del panel (vanilla JS, sin deps)
+   ===================================================== */
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
+const LS = { get baseUrl(){ return localStorage.getItem('panel.baseUrl') || 'http://localhost:8080'; },
+             set baseUrl(v){ localStorage.setItem('panel.baseUrl', v); },
+             get usuario(){ return localStorage.getItem('panel.usuario') || 'jose.orellana'; },
+             set usuario(v){ localStorage.setItem('panel.usuario', v); } };
+
+const baseUrl = () => $('#baseUrl').value.trim().replace(/\/+$/,'');
+const usuario = () => $('#usuario').value.trim() || 'jose.orellana';
+const headers = (json=true) => ({ 'X-Usuario': usuario(), ...(json ? { 'Content-Type':'application/json' } : {}) });
+
+const toast = () => {
+  const el = $('#toast'); el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 1800);
+};
+const copyText = (txt) => navigator.clipboard.writeText(txt).then(toast);
+
+/* ---------- reloj ---------- */
+setInterval(() => { $('#clock').textContent = new Date().toTimeString().slice(0,8); }, 1000);
+$('#clock').textContent = new Date().toTimeString().slice(0,8);
+
+/* ---------- persistencia de config ---------- */
+$('#baseUrl').value = LS.baseUrl;
+$('#usuario').value = LS.usuario;
+$('#baseUrl').addEventListener('change', e => LS.baseUrl = e.target.value);
+$('#usuario').addEventListener('change', e => LS.usuario = e.target.value);
+
+/* =====================================================
+   01 · TOPOLOGÍA — tarjetas de servicios
+   ===================================================== */
+const SERVICES = [
+  { name:'EUREKA-SERVER',   port:8761, path:'/',                 role:'Service Discovery',  db:'—',                     tag:'@EnableEurekaServer', url:'http://localhost:8761/' },
+  { name:'API-GATEWAY',     port:8080, path:'/api/productos/1',  role:'Router + LoadBalancer (WebFlux)', db:'—',          tag:'spring-cloud-gateway', url:'http://localhost:8080/' },
+  { name:'MS-PROVEEDOR',    port:8081, path:'/api/proveedores',  role:'Negocio (lab proveedor)', db:'bd_proveedor',  tag:'@EnableFeignClients', url:'http://localhost:8081/' },
+  { name:'MS-PRODUCTO',     port:8082, path:'/api/productos',    role:'Negocio (catálogo + stock)', db:'bd_producto', tag:'@EnableFeignClients', url:'http://localhost:8082/' },
+  { name:'MS-COMPRA',       port:8083, path:'/api/compras',      role:'Negocio (orquestador)', db:'bd_compra',        tag:'@EnableFeignClients', url:'http://localhost:8083/' },
+];
+
+const svcGrid = $('#svcGrid');
+SERVICES.forEach(s => {
+  const div = document.createElement('div');
+  div.className = 'svc';
+  div.innerHTML = `
+    <div class="head"><span class="name">${s.name}</span><span class="led" data-led="${s.port}"></span></div>
+    <div class="meta">
+      <div>ROL <b>${s.role}</b></div>
+      <div>ANOTACIÓN <b>${s.tag}</b></div>
+      <div>BASE DE DATOS <b class="db-tag">${s.db}</b></div>
+    </div>
+    <div class="url">:${s.port}${s.path}</div>
+    <div class="svc-footer">
+      <span>puerto <b>${s.port}</b></span>
+      <button class="tiny" data-ping="${s.port}" data-path="${s.path}">◉ PING</button>
+    </div>`;
+  svcGrid.appendChild(div);
+});
+
+async function pingNode(port, path) {
+  const led = document.querySelector(`.led[data-led="${port}"]`);
+  led.className = 'led';
+  const url = port === 8761 ? 'http://localhost:8761/' : `http://localhost:${port}${path}`;
+  try {
+    await fetch(url, { mode: 'no-cors', cache: 'no-store', headers: { 'X-Usuario': usuario() } });
+    led.className = 'led on'; return true;
+  } catch { led.className = 'led off'; return false; }
+}
+
+async function pingAll() {
+  const results = await Promise.all(SERVICES.map(s => pingNode(s.port, s.path)));
+  const up = results.filter(Boolean).length;
+  $('#upCount').textContent = `${up}/5`;
+  return results;
+}
+$('#btnPingAll').addEventListener('click', () => { pingAll(); logLine('PING · sondeando 5 nodos…', 'log-info'); });
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-ping]'); if (!btn) return;
+  pingNode(+btn.dataset.ping, btn.dataset.path).then(ok => logLine(`PING :${btn.dataset.ping} → ${ok ? 'UP' : 'DOWN'}`, ok ? 'log-ok' : 'log-err'));
+});
+
+/* =====================================================
+   02 · CATÁLOGO DE ENDPOINTS (por el Gateway :8080)
+   ===================================================== */
+const API = {
+  proveedor: [
+    ['GET','/api/proveedores','Listar todos los proveedores'],
+    ['GET','/api/proveedores/{id}','Obtener proveedor por id'],
+    ['GET','/api/proveedores/ruc/{ruc}','Buscar por RUC (11 dígitos)'],
+    ['POST','/api/proveedores','Crear proveedor → 201 + Location'],
+    ['PUT','/api/proveedores/{id}','Actualizar proveedor (mismo cuerpo)'],
+    ['PATCH','/api/proveedores/{id}/estado','Cambiar estado (ACTIVO|INACTIVO)'],
+    ['DELETE','/api/proveedores/{id}','Eliminar proveedor'],
+  ],
+  producto: [
+    ['GET','/api/productos','Listar productos'],
+    ['GET','/api/productos/{id}','Obtener producto por id'],
+    ['GET','/api/productos/proveedor/{proveedorId}','Productos de un proveedor'],
+    ['POST','/api/productos','Crear producto → 201 + Location'],
+    ['PUT','/api/productos/{id}','Actualizar producto completamente'],
+    ['PATCH','/api/productos/{id}/estado','Cambiar estado (ACTIVO|INACTIVO)'],
+    ['PATCH','/api/productos/{id}/stock?motivo=…','Ajuste de stock (contrato ms-compra)'],
+    ['GET','/api/productos/{id}/movimientos','Kardex del producto (stock_movimientos)'],
+    ['DELETE','/api/productos/{id}','Eliminar producto'],
+  ],
+  compra: [
+    ['GET','/api/compras','Listar compras (FEED: orden cronológico desc)'],
+    ['GET','/api/compras/{id}','Obtener compra por id'],
+    ['GET','/api/compras/proveedor/{proveedorId}','Compras de un proveedor'],
+    ['POST','/api/compras','Registrar (NO descuenta stock) → 201'],
+    ['PUT','/api/compras/{id}','Modificar (solo REGISTRADA → sino 409)'],
+    ['POST','/api/compras/{id}/confirmar','Confirmar → CONFIRMADA + descuenta (DECISIÓN J)'],
+    ['POST','/api/compras/{id}/anular','Anular (si CONFIRMADA → devuelve stock)'],
+    ['DELETE','/api/compras/{id}','Eliminar (solo si ANULADA → 204)'],
+    ['GET','/api/compras/{id}/auditoria','Trazabilidad: quién hizo qué y cuándo'],
+  ],
+};
+const BODY_EXAMPLES = {
+  '/api/proveedores': '{"ruc":"20123456789","razonSocial":"Inversiones ACME S.A.C.","nombreComercial":"ACME","email":"contacto@acme.pe","telefono":"999888777","direccion":"Av. Industrial 123, Lima"}',
+  '/api/productos':   '{"codigo":"PRD-009","nombre":"Aceite vegetal 1L","descripcion":"","precio":14.50,"stock":100,"stockMinimo":20,"categoria":"Abarrotes","proveedorId":1}',
+  '/api/compras':     '{"proveedorId":1,"observaciones":"Compra quincena","detalles":[{"productoId":1,"cantidad":3,"precioUnitario":95.00}]}',
+};
+const curlFor = (method, path) => {
+  const url = `http://localhost:8080${path.replace('{id}','1').replace('{proveedorId}','1').replace('{ruc}','20123456789').split('?')[0]}`;
+  const ep = Object.keys(BODY_EXAMPLES).find(k => path.startsWith(k));
+  const hasBody = ['POST','PUT','PATCH'].includes(method) && ep;
+  let cmd = `curl.exe -s -X ${method} "${url}" -H "X-Usuario: ${usuario()}"${hasBody ? ' -H "Content-Type: application/json"' : ''}`;
+  if (hasBody) cmd += ` -d '${BODY_EXAMPLES[ep]}'`;
+  return cmd;
+};
+
+const apiTabs = $('#apiTabs');
+['proveedor','producto','compra'].forEach((key, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab' + (i === 2 ? ' active' : '');
+  b.textContent = key.toUpperCase();
+  b.dataset.tab = key;
+  apiTabs.appendChild(b);
+});
+let currentTab = 'compra';
+const apiBody = $('#apiBody');
+function renderApi() {
+  const q = $('#apiFilter').value.trim().toLowerCase();
+  apiBody.innerHTML = API[currentTab]
+    .filter(([m,p,d]) => !q || [m,p,d].join(' ').toLowerCase().includes(q))
+    .map(([m,p,d]) => `
+      <tr>
+        <td><span class="method m-${m.toLowerCase()}">${m}</span></td>
+        <td>${p.replace(/\{id\}/g,'<span style="color:var(--amber)">{id}</span>')}</td>
+        <td style="color:var(--dim)">${d}</td>
+        <td class="curl-cell"><button class="tiny" data-curl="${encodeURIComponent(curlFor(m,p))}">⧉ curl</button></td>
+      </tr>`).join('') || '<tr><td colspan="4" style="color:var(--dim)">sin coincidencias</td></tr>';
+}
+apiTabs.addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  currentTab = b.dataset.tab;
+  $$('.tab', apiTabs).forEach(t => t.classList.toggle('active', t === b));
+  renderApi();
+});
+$('#apiFilter').addEventListener('input', renderApi);
+document.addEventListener('click', e => { const b = e.target.closest('[data-curl]'); if (b) copyText(decodeURIComponent(b.dataset.curl)); });
+renderApi();
+
+/* =====================================================
+   03 · RUNNER — flujo de compra en vivo
+   ===================================================== */
+const STEPS = [
+  { id:'stock0',  lbl:'Leer stock inicial', extra:'PRODUCTO' },
+  { id:'registrar', lbl:'Registrar compra (REGISTRADA)' },
+  { id:'confirmar', lbl:'Confirmar (descuenta)' },
+  { id:'stock↓',  lbl:'Verificar stock descontado' },
+  { id:'anular',   lbl:'Anular (devuelve stock)' },
+  { id:'stock↑',  lbl:'Verificar stock devuelto' },
+  { id:'audit',    lbl:'Consultar auditoría' },
+];
+const stepsList = $('#stepsList');
+STEPS.forEach(s => {
+  const d = document.createElement('div');
+  d.className = 'step'; d.dataset.step = s.id;
+  d.innerHTML = `<span class="num">${String(STEPS.indexOf(s)+1).padStart(2,'0')}</span><span class="lbl">${s.lbl}</span><span class="state">PEND.</span>`;
+  stepsList.appendChild(d);
+});
+const setStep = (id, state) => { const el = stepsList.querySelector(`[data-step="${id}"]`); el.classList.remove('active','done'); if (state !== 'pend') el.classList.add(state); el.querySelector('.state').textContent = state==='done'?'OK':state==='active'?'…':'PEND.'; };
+const runnerConsole = $('#runnerConsole');
+function logLine(msg, cls='log-info') {
+  const t = new Date().toLocaleTimeString();
+  const div = document.createElement('div');
+  div.className = `log-line ${cls}`;
+  div.innerHTML = `<span class="log-time">[${t}]</span> ${escapeHtml(msg)}`;
+  runnerConsole.appendChild(div);
+  runnerConsole.scrollTop = runnerConsole.scrollHeight;
+}
+function logJson(obj, cls='log-line log-info') {
+  const div = document.createElement('div'); div.className = cls;
+  const pre = document.createElement('pre'); pre.textContent = JSON.stringify(obj, null, 2); div.appendChild(pre); runnerConsole.appendChild(div); runnerConsole.scrollTop = runnerConsole.scrollHeight;
+}
+const escapeHtml = s => String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const r = { compraId:null, numero:null };
+const stepEls = id => stepsList.querySelector(`[data-step="${id}"]`);
+const productoId = () => +$('#rProductoId').value, proveedorId = () => +$('#rProveedorId').value;
+
+async function apiFetch(path, { method='GET', json=null } = {}) {
+  const res = await fetch(`${baseUrl()}${path}`, { method, headers: headers(!!json), body: json ? JSON.stringify(json) : undefined });
+  let bodyText = await res.text();
+  let body; try { body = JSON.parse(bodyText); } catch { body = bodyText; }
+  return { ok: res.ok, status: res.status, body };
+}
+
+async function getStock() {
+  const p = stepEls('stock0'); p.classList.add('active');
+  const res = await apiFetch(`/api/productos/${productoId()}`);
+  if (res.ok) { $('#stockChip').textContent = res.body.stock; logLine(`GET /api/productos/${productoId()} → 200 · stock=${res.body.stock}`, 'log-ok'); setStep('stock0','done'); return res.body.stock; }
+  logLine(`GET producto → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); return null;
+}
+
+$('#step1Btn').addEventListener('click', async () => {
+  $('#step1Btn').disabled = true;
+  await getStock();
+  const obs = $('#rObs').value;
+  setStep('registrar','active');
+  logLine(`POST /api/compras (cantidad=${+$('#rCantidad').value})`, 'log-info');
+  const res = await apiFetch('/api/compras', { method:'POST', json: { proveedorId: proveedorId(), observaciones: obs, detalles: [{ productoId: productoId(), cantidad: +$('#rCantidad').value, precioUnitario: +$('#rPrecio').value }] } });
+  if (res.ok && res.body && res.body.id) { r.compraId = res.body.id; r.numero = res.body.numeroCompra; setStep('registrar','done'); logLine(`201 · ${res.body.numeroCompra} · total S/ ${res.body.total}`, 'log-ok'); logJson(res.body,'log-info'); $('#step2Btn').disabled = false; }
+  else { setStep('registrar','pend'); logLine(`POST /api/compras → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); }
+});
+$('#step2Btn').addEventListener('click', async () => {
+  $('#step2Btn').disabled = true; setStep('confirmar','active');
+  logLine(`POST /api/compras/${r.compraId}/confirmar`, 'log-info');
+  const res = await apiFetch(`/api/compras/${r.compraId}/confirmar`, { method:'POST' });
+  if (res.ok) { setStep('confirmar','done'); logLine('200 · CONFIRMADA', 'log-ok'); logJson(res.body,'log-info'); $('#step3Btn').disabled = false; }
+  else { logLine(`confirmar → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); }
+});
+$('#step3Btn').addEventListener('click', async () => {
+  setStep('stock↓','active');
+  const res = await apiFetch(`/api/productos/${productoId()}`);
+  if (res.ok) { $('#stockChip').textContent = res.body.stock; setStep('stock↓','done'); logLine(`stock → ${res.body.stock}`, 'log-ok'); $('#step4Btn').disabled = false; }
+});
+$('#step4Btn').addEventListener('click', async () => {
+  $('#step4Btn').disabled = true; setStep('anular','active');
+  logLine(`POST /api/compras/${r.compraId}/anular`, 'log-info');
+  const res = await apiFetch(`/api/compras/${r.compraId}/anular`, { method:'POST' });
+  if (res.ok) { setStep('anular','done'); logLine('200 · ANULADA', 'log-ok'); logJson(res.body,'log-info'); $('#step5Btn').disabled = false; }
+  else { logLine(`anular → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); }
+});
+$('#step5Btn').addEventListener('click', async () => {
+  setStep('stock↑','active');
+  const res = await apiFetch(`/api/productos/${productoId()}`);
+  if (res.ok) { $('#stockChip').textContent = res.body.stock; setStep('stock↑','done'); logLine(`stock → ${res.body.stock}`, 'log-ok'); $('#step6Btn').disabled = false; }
+});
+$('#step6Btn').addEventListener('click', async () => {
+  setStep('audit','active');
+  const res = await apiFetch(`/api/compras/${r.compraId}/auditoria`);
+  if (res.ok) { setStep('audit','done'); logLine(`auditoría: ${res.body.length} registro(s)`, 'log-ok'); logJson(res.body,'log-info'); }
+  else { logLine(`auditoría → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); }
+});
+$('#btnResetRunner').addEventListener('click', () => {
+  r.compraId = null; $('#stockChip').textContent = '—';
+  ['stock0','registrar','confirmar','stock↓','anular','stock↑','audit'].forEach(id => setStep(id,'pend'));
+  ['step2Btn','step3Btn','step4Btn','step5Btn','step6Btn'].forEach(id => $('#'+id).disabled = true);
+  $('#step1Btn').disabled = false;
+  logLine('Runner reiniciado.', 'log-warn');
+});
+$('#btnClearConsole').addEventListener('click', () => { runnerConsole.innerHTML = '<div class="log-line log-info"><span class="log-time">[console]</span> consola limpiada.</div>'; });
+
+/* botón probar conexión */
+$('#btnTestConn').addEventListener('click', async () => {
+  logLine('PROBAR · GET /api/productos/1 por el Gateway…', 'log-info');
+  const res = await apiFetch('/api/productos/1');
+  if (res.ok) { logLine(`200 · producto "${res.body.nombre}" · stock=${res.body.stock}`, 'log-ok'); toast(); }
+  else logLine(`PROBAR → ${res.status}`, 'log-err');
+});
+
+/* =====================================================
+   05 · ARCHIVOS — tabla de artefactos
+   ===================================================== */
+const FILES = [
+  ['README.md','Documentación académica (12 secciones)'],
+  ['docs/CONCLUSIONES_Y_SUSTENTACION.md','4.16–4.18: aprendizajes, guía de sustentación, checklist rúbrica'],
+  ['docs/panel.html','Este panel'],
+  ['postman/coleccion-global.json','Colección Postman v2.1 (5 carpetas, pm.test)'],
+  ['sql/01_creacion_bases.sql','DDL + seed (3 bases, CHECK constraints, índices KEY)'],
+  ['api-gateway/src/main/java/com/orellana/microservicios/api_gateway/config/CorsDevConfig.java','CORS solo dev para el panel'],
+  ['ms-producto/src/main/java/com/orellana/microservicios/ms_producto/repository/ProductoRepository.java','Lock pesimista nativo FOR UPDATE'],
+  ['ms-compra/src/main/java/com/orellana/microservicios/ms_compra/dto/CompraRequest.java','@Valid en cascada (fix validación cantidad)'],
+  ['ms-compra/src/main/java/com/orellana/microservicios/ms_compra/config/FeignErrorDecoder.java','404→not found · 409→dominio · resto→503'],
+];
+const fileBody = $('#fileBody');
+FILES.forEach(([f,d]) => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><code class="inline">${f}</code></td><td style="color:var(--dim)">${d}</td><td><button class="tiny" data-copy="${encodeURIComponent(f)}">⧉ copiar ruta</button></td>`;
+  fileBody.appendChild(tr);
+});
+document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyText(decodeURIComponent(b.dataset.copy)); });
+
+/* arranque */
+pingAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+server:
+  port: ${GATEWAY_PORT:8080}
+
+# Rutas identicas a dev; en prod la resolucion de Eureka SOLO por variable
+# de entorno (sin valor por defecto: si falta la variable, el arranque falla
+# y eso es intencional para no apuntar a nada por accidente).
+
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: ms-proveedor
+              uri: lb://MS-PROVEEDOR
+              predicates:
+                - Path=/api/proveedores/**
+            - id: ms-producto
+              uri: lb://MS-PRODUCTO
+              predicates:
+                - Path=/api/productos/**
+            - id: ms-compra
+              uri: lb://MS-COMPRA
+              predicates:
+                - Path=/api/compras/**
+      httpclient:
+        connect-timeout: 2000
+        response-timeout: 5s
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL}
+  instance:
+    prefer-ip-address: true

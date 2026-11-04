@@ -1,0 +1,772 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-0001-4000-8000-640000000001",
+		"name": "Laboratorio Microservicios - Flujo Global (Orellana Rodriguez Jose Miguel)",
+		"description": "Coleccion GLOBAL del laboratorio de Arquitectura de Microservicios.\n\nTODO pasa por el GATEWAY (http://localhost:8080), que NO aplica StripPrefix: los paths son completos (/api/proveedores, /api/productos, /api/compras).\n\nHeader de auditoria: X-Usuario = jose.orellana (con fallback 'sistema' si no viaja).\n\nEjecutar las carpetas EN ORDEN: 01 -> 02 -> 03 (flujo completo del CHECKPOINT) -> 04 (errores esperados: el estado ROJO de estas peticiones PASA, porque se espera el error) -> 05 (detener ms-producto antes: servicio caido -> 503).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080" },
+		{ "key": "usuario", "value": "jose.orellana" },
+		{ "key": "proveedorId", "value": "1" },
+		{ "key": "productoId", "value": "1" },
+		{ "key": "producto2Id", "value": "2" },
+		{ "key": "cantidad", "value": "3" },
+		{ "key": "compraId", "value": "" },
+		{ "key": "stockAntes", "value": "0" }
+	],
+	"item": [
+		{
+			"name": "01 Proveedor",
+			"item": [
+				{
+					"name": "Listar proveedores",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/proveedores", "host": ["{{baseUrl}}"], "path": ["api", "proveedores"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('La lista es un arreglo', function () { pm.expect(Array.isArray(pm.response.json())).to.be.true; });"
+						] }
+					}]
+				},
+				{
+					"name": "Obtener proveedor por id",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/proveedores/{{proveedorId}}", "host": ["{{baseUrl}}"], "path": ["api", "proveedores", "{{proveedorId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('Contrato ProveedorResponse completo', function () {",
+							"    ['id','ruc','razonSocial','nombreComercial','email','telefono','direccion','estado','fechaRegistro','creadoPor','modificadoPor'].forEach(function (campo) {",
+							"        pm.expect(json).to.have.property(campo);",
+							"    });",
+							"});",
+							"pm.test('creadoPor y modificadoPor registran usuario', function () {",
+							"    pm.expect(json.creadoPor).to.be.a('string').and.to.have.length.above(0);",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "Crear proveedor (201, guardo su id)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"ruc\": \"20551234567\",\n  \"razonSocial\": \"COMERCIAL PACIFICO SUR S.A.\",\n  \"nombreComercial\": \"Pac\u00edfico Sur\",\n  \"email\": \"ventas@pacificosur.pe\",\n  \"telefono\": \"01-7654321\",\n  \"direccion\": \"Av. Arequipa 2350, Lince\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/proveedores", "host": ["{{baseUrl}}"], "path": ["api", "proveedores"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
+							"var json = pm.response.json();",
+							"pm.test('Estado inicial ACTIVO', function () { pm.expect(json.estado).to.eql('ACTIVO'); });",
+							"pm.test('creadoPor es el header X-Usuario', function () { pm.expect(json.creadoPor).to.eql(pm.collectionVariables.get('usuario')); });",
+							"pm.collectionVariables.set('proveedorId', json.id);",
+							"pm.test('proveedorId guardado: ' + json.id);"
+						] }
+					}]
+				},
+				{
+					"name": "Cambiar estado del proveedor (INACTIVO | ACTIVO)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"estado\": \"INACTIVO\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/proveedores/{{proveedorId}}/estado", "host": ["{{baseUrl}}"], "path": ["api", "proveedores", "{{proveedorId}}", "estado"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('El estado devuelto es INACTIVO', function () { pm.expect(pm.response.json().estado).to.eql('INACTIVO'); });"
+						] }
+					}]
+				}
+			]
+		},
+		{
+			"name": "02 Producto",
+			"item": [
+				{
+					"name": "Listar productos",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos", "host": ["{{baseUrl}}"], "path": ["api", "productos"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('La lista es un arreglo', function () { pm.expect(Array.isArray(pm.response.json())).to.be.true; });"
+						] }
+					}]
+				},
+				{
+					"name": "Obtener producto por id (guardo productoId y stockAntes)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('Contrato ProductoResponse completo', function () {",
+							"    ['id','codigo','nombre','descripcion','precio','stock','stockMinimo','categoria','estado','proveedorId','bajoStockMinimo','fechaCreacion','fechaActualizacion','creadoPor','modificadoPor'].forEach(function (campo) {",
+							"        pm.expect(json).to.have.property(campo);",
+							"    });",
+							"});",
+							"pm.collectionVariables.set('stockAntes', json.stock);",
+							"pm.test('stockAntes guardado: ' + json.stock);"
+						] }
+					}]
+				},
+				{
+					"name": "Listar productos del proveedor",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/proveedor/{{proveedorId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "proveedor", "{{proveedorId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('Todos los productos pertenecen al proveedor', function () {",
+							"    pm.response.json().forEach(function (producto) {",
+							"        pm.expect(String(producto.proveedorId)).to.eql(pm.collectionVariables.get('proveedorId'));",
+							"    });",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "Crear producto (201, guardo su id)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"codigo\": \"PRD-TEST-01\",\n  \"nombre\": \"Producto creado por Postman\",\n  \"descripcion\": \"Creado por la coleccion global\",\n  \"precio\": 15.50,\n  \"stock\": 50,\n  \"stockMinimo\": 10,\n  \"categoria\": \"Abarrotes\",\n  \"proveedorId\": {{proveedorId}}\n}" },
+						"url": { "raw": "{{baseUrl}}/api/productos", "host": ["{{baseUrl}}"], "path": ["api", "productos"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
+							"var json = pm.response.json();",
+							"pm.test('Estado inicial ACTIVO y stock 50', function () {",
+							"    pm.expect(json.estado).to.eql('ACTIVO');",
+							"    pm.expect(json.stock).to.eql(50);",
+							"});",
+							"pm.collectionVariables.set('productoId', json.id);",
+							"pm.collectionVariables.set('stockAntes', json.stock);",
+							"pm.test('productoId guardado: ' + json.id);"
+						] }
+					}]
+				},
+				{
+					"name": "Ajuste manual de stock (DESCONTAR | INCREMENTAR) con motivo",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"cantidad\": 2,\n  \"operacion\": \"DESCONTAR\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}/stock?motivo=venta+manual+de+prueba", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}", "stock"], "query": [{ "key": "motivo", "value": "venta manual de prueba" }] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('El nuevo stock es stockAntes - 2', function () {",
+							"    pm.expect(json.stock).to.eql(Number(pm.collectionVariables.get('stockAntes')) - 2);",
+							"});",
+							"pm.collectionVariables.set('stockAntes', json.stock);"
+						] }
+					}]
+				},
+				{
+					"name": "Historial de movimientos de stock (auditoria del inventario)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}/movimientos", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}", "movimientos"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('Hay al menos un movimiento', function () { pm.expect(json.length).to.be.at.least(1); });",
+							"pm.test('El movimiento guarda el usuario del header', function () { pm.expect(json[0].usuario).to.eql(pm.collectionVariables.get('usuario')); });"
+						] }
+					}]
+				}
+			]
+		},
+		{
+			"name": "03 Compra - FLUJO COMPLETO (registrar no descuenta / confirmar descuenta / anular devuelve)",
+			"item": [
+				{
+					"name": "0. GET producto (stock ANTES de la compra)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.collectionVariables.set('stockAntes', pm.response.json().stock);",
+							"pm.test('stockAntes guardado: ' + pm.collectionVariables.get('stockAntes'));"
+						] }
+					}]
+				},
+				{
+					"name": "1. POST registrar compra (201 REGISTRADA)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"observaciones\": \"Compra del flujo completo\",\n  \"detalles\": [\n    { \"productoId\": {{productoId}}, \"cantidad\": {{cantidad}}, \"precioUnitario\": 15.50 }\n  ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
+							"var json = pm.response.json();",
+							"pm.test('Estado inicial REGISTRADA', function () { pm.expect(json.estado).to.eql('REGISTRADA'); });",
+							"pm.test('El numero sigue el formato C-AAAA-NNNNNN', function () {",
+							"    pm.expect(json.numeroCompra).to.match(/^C-\\d{4}-\\d{6}$/);",
+							"});",
+							"pm.test('El precioUnitario es el enviado por el cliente (15.50)', function () {",
+							"    pm.expect(Number(json.detalles[0].precioUnitario)).to.eql(15.50);",
+							"});",
+							"pm.test('creadoPor es el header X-Usuario', function () { pm.expect(json.creadoPor).to.eql(pm.collectionVariables.get('usuario')); });",
+							"pm.collectionVariables.set('compraId', json.id);",
+							"pm.test('compraId guardado: ' + json.id);"
+						] }
+					}]
+				},
+				{
+					"name": "2. GET compra (sigue REGISTRADA)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('Sigue REGISTRADA', function () { pm.expect(pm.response.json().estado).to.eql('REGISTRADA'); });"
+						] }
+					}]
+				},
+				{
+					"name": "3. GET producto (VERIFICAR que REGISTRAR no descuento stock)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('REGISTRAR NO DESCUENTA: stock sigue igual a stockAntes', function () {",
+							"    pm.expect(json.stock).to.eql(Number(pm.collectionVariables.get('stockAntes')));",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "4. GET auditoria tras registrar (accion REGISTRADA de jose.orellana)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/auditoria", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "auditoria"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('La fila mas reciente es REGISTRADA del usuario del header', function () {",
+							"    pm.expect(json[0].accion).to.eql('REGISTRADA');",
+							"    pm.expect(json[0].usuario).to.eql(pm.collectionVariables.get('usuario'));",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "5. POST confirmar (CONFIRMADA: SI descuenta stock en ms-producto)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/confirmar", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "confirmar"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('Estado CONFIRMADA', function () { pm.expect(pm.response.json().estado).to.eql('CONFIRMADA'); });"
+						] }
+					}]
+				},
+				{
+					"name": "6. GET producto (VERIFICAR stock descontado)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"var antes = Number(pm.collectionVariables.get('stockAntes'));",
+							"var cantidad = Number(pm.collectionVariables.get('cantidad'));",
+							"pm.test('El stock QUEDO descontado: stockAntes - cantidad', function () {",
+							"    pm.expect(json.stock).to.eql(antes - cantidad);",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "7. GET auditoria tras confirmar (accion CONFIRMADA)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/auditoria", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "auditoria"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('La fila mas reciente es CONFIRMADA del usuario del header', function () {",
+							"    pm.expect(json[0].accion).to.eql('CONFIRMADA');",
+							"    pm.expect(json[0].estadoAnterior).to.eql('REGISTRADA');",
+							"    pm.expect(json[0].usuario).to.eql(pm.collectionVariables.get('usuario'));",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "8. POST anular una CONFIRMADA (ANULADA: devuelve stock)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/anular", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "anular"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"pm.test('Estado ANULADA', function () { pm.expect(pm.response.json().estado).to.eql('ANULADA'); });"
+						] }
+					}]
+				},
+				{
+					"name": "9. GET producto (VERIFICAR stock devuelto)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/productos/{{productoId}}", "host": ["{{baseUrl}}"], "path": ["api", "productos", "{{productoId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('El stock VOLVIO al valor original (stockAntes)', function () {",
+							"    pm.expect(json.stock).to.eql(Number(pm.collectionVariables.get('stockAntes')));",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "10. GET auditoria final (3 registros y QUIEN hizo cada uno)",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/auditoria", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "auditoria"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 200 OK', function () { pm.response.to.have.status(200); });",
+							"var json = pm.response.json();",
+							"pm.test('Hay 3 filas: ANULADA, CONFIRMADA, REGISTRADA', function () {",
+							"    pm.expect(json.length).to.eql(3);",
+							"    pm.expect(json[0].accion).to.eql('ANULADA');",
+							"    pm.expect(json[1].accion).to.eql('CONFIRMADA');",
+							"    pm.expect(json[2].accion).to.eql('REGISTRADA');",
+							"});",
+							"pm.test('Cada fila registra QUIEN hizo la accion (header X-Usuario)', function () {",
+							"    json.forEach(function (fila) {",
+							"        pm.expect(fila.usuario).to.eql(pm.collectionVariables.get('usuario'));",
+							"    });",
+							"});",
+							"pm.test('La anulacion dice de donde venia (CONFIRMADA) y que el stock fue devuelto', function () {",
+							"    pm.expect(json[0].estadoAnterior).to.eql('CONFIRMADA');",
+							"    pm.expect(json[0].estadoNuevo).to.eql('ANULADA');",
+							"});"
+						] }
+					}]
+				}
+			]
+		},
+		{
+			"name": "03B Aceptacion (prueba de aceptacion oficial)",
+			"item": [
+				{
+					"name": "ACEPTACION - Compra con dos productos y total",
+					"request": {
+						"method": "POST",
+						"description": "Prueba de aceptacion de la guia oficial:\nproveedor 1 (ACTIVO)\nproducto 1 x 10 a precioUnitario 12.50\nproducto 2 x 2  a precioUnitario 189.90\nNO descuenta stock (estado REGISTRADA).\n\nVerificacion SQL en bd_compra:\nSELECT d.producto_id, d.cantidad, d.precio_unitario, d.subtotal\nFROM bd_compra.compra_detalles d\nWHERE d.compra_id = (SELECT MAX(id) FROM bd_compra.compras)\nORDER BY d.producto_id;\n\nSELECT total FROM bd_compra.compras\nWHERE id = (SELECT MAX(id) FROM bd_compra.compras);",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": 1,\n  \"observaciones\": \"ACEPTACION - Compra con dos productos y total\",\n  \"detalles\": [\n    { \"productoId\": 1, \"cantidad\": 10, \"precioUnitario\": 12.50 },\n    { \"productoId\": 2, \"cantidad\": 2,  \"precioUnitario\": 189.90 }\n  ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
+							"var json = pm.response.json();",
+							"pm.test('Estado inicial REGISTRADA', function () { pm.expect(json.estado).to.eql('REGISTRADA'); });",
+							"pm.test('numeroCompra con formato C-AAAA-NNNNNN', function () { pm.expect(json.numeroCompra).to.match(/^C-\\d{4}-\\d{6}$/); });",
+							"pm.test('Detalle 1: producto 1, cantidad 10, precioUnitario 12.50', function () {",
+							"    pm.expect(json.detalles[0].productoId).to.eql(1);",
+							"    pm.expect(json.detalles[0].cantidad).to.eql(10);",
+							"    pm.expect(Number(json.detalles[0].precioUnitario)).to.eql(12.50);",
+							"});",
+							"pm.test('Detalle 2: producto 2, cantidad 2, precioUnitario 189.90', function () {",
+							"    pm.expect(json.detalles[1].productoId).to.eql(2);",
+							"    pm.expect(json.detalles[1].cantidad).to.eql(2);",
+							"    pm.expect(Number(json.detalles[1].precioUnitario)).to.eql(189.90);",
+							"});",
+							"pm.test('subtotal 1 = 125.00', function () { pm.expect(Number(json.detalles[0].subtotal).toFixed(2)).to.eql('125.00'); });",
+							"pm.test('subtotal 2 = 379.80', function () { pm.expect(Number(json.detalles[1].subtotal).toFixed(2)).to.eql('379.80'); });",
+							"pm.test('TOTAL = 504.80', function () { pm.expect(Number(json.total).toFixed(2)).to.eql('504.80'); });",
+							"pm.test('creadoPor es el header X-Usuario', function () { pm.expect(json.creadoPor).to.eql(pm.collectionVariables.get('usuario')); });"
+						] }
+					}]
+				}
+			]
+		},
+		{
+			"name": "04 Errores esperados (estado rojo = PASA)",
+			"item": [
+				{
+					"name": "POST compra sin detalles -> 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": []\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 400 Bad Request', function () { pm.response.to.have.status(400); });",
+							"var json = pm.response.json();",
+							"pm.test('Formato global ApiError', function () {",
+							"    ['timestamp','status','error','message','path','details'].forEach(function (campo) {",
+							"        pm.expect(json).to.have.property(campo);",
+							"    });",
+							"});",
+							"pm.test('details explica el campo que fallo', function () {",
+							"    pm.expect(json.details.length).to.be.at.least(1);",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "POST compra con cantidad 0 -> 400",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 0, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 400 Bad Request', function () { pm.response.to.have.status(400); });",
+							"pm.test('details menciona la cantidad', function () {",
+							"    pm.expect(pm.response.json().details.join('|')).to.include('cantidad');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "GET compra inexistente -> 404",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/999999", "host": ["{{baseUrl}}"], "path": ["api", "compras", "999999"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 404 Not Found', function () { pm.response.to.have.status(404); });",
+							"pm.test('Formato global ApiError', function () {",
+							"    var json = pm.response.json();",
+							"    pm.expect(json.status).to.eql(404);",
+							"    pm.expect(json.error).to.eql('Not Found');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "PREPARAR: proveedor INACTIVO (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"estado\": \"INACTIVO\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/proveedores/{{proveedorId}}/estado", "host": ["{{baseUrl}}"], "path": ["api", "proveedores", "{{proveedorId}}", "estado"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": ["pm.test('Proveedor ahora INACTIVO', function () { pm.expect(pm.response.json().estado).to.eql('INACTIVO'); });"] }
+					}]
+				},
+				{
+					"name": "POST compra a proveedor INACTIVO -> 409",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje menciona que no esta ACTIVO', function () {",
+							"    pm.expect(pm.response.json().message).to.include('ACTIVO');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "REACTIVAR: proveedor ACTIVO (PATCH)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"estado\": \"ACTIVO\"\n}" },
+						"url": { "raw": "{{baseUrl}}/api/proveedores/{{proveedorId}}/estado", "host": ["{{baseUrl}}"], "path": ["api", "proveedores", "{{proveedorId}}", "estado"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": ["pm.test('Proveedor reactivado', function () { pm.expect(pm.response.json().estado).to.eql('ACTIVO'); });"] }
+					}]
+				},
+				{
+					"name": "POST compra con stock insuficiente (cantidad 99999) -> 409",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 99999, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje menciona Stock insuficiente', function () {",
+							"    pm.expect(pm.response.json().message).to.include('Stock insuficiente');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "POST compra con productos repetidos -> 409",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 }, { \"productoId\": {{productoId}}, \"cantidad\": 2, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje menciona repetido', function () {",
+							"    pm.expect(pm.response.json().message).to.include('repetido');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "POST confirmar una compra YA ANULADA -> 409",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/confirmar", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "confirmar"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje explica el ciclo de vida (solo desde REGISTRADA)', function () {",
+							"    pm.expect(pm.response.json().message).to.include('REGISTRADA');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "PUT una compra YA ANULADA -> 409",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 5, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje explica el ciclo de vida (solo REGISTRada)', function () {",
+							"    pm.expect(pm.response.json().message).to.include('REGISTRADA');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "POST anular una compra YA ANULADA -> 409",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}/anular", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}", "anular"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 409 Conflict', function () { pm.response.to.have.status(409); });",
+							"pm.test('Mensaje dice que ya esta ANULADA', function () {",
+							"    pm.expect(pm.response.json().message).to.include('ANULADA');",
+							"});"
+						] }
+					}]
+				},
+				{
+					"name": "DELETE la compra ANULADA -> 204 (caso VALIDO)",
+					"request": {
+						"method": "DELETE",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 204 No Content', function () { pm.response.to.have.status(204); });"
+						] }
+					}]
+				},
+				{
+					"name": "GET la compra ya eliminada -> 404",
+					"request": {
+						"method": "GET",
+						"header": [{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" }],
+						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 404 Not Found', function () { pm.response.to.have.status(404); });"
+						] }
+					}]
+				}
+			]
+		},
+		{
+			"name": "05 Servicio caido -> 503 (detener ms-producto ANTES de ejecutar)",
+			"item": [
+				{
+					"name": "POST compra con ms-producto caido -> 503 y SIN stack trace",
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
+							{ "key": "Content-Type", "value": "application/json" }
+						],
+						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
+						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
+					},
+					"event": [{
+						"listen": "test",
+						"script": { "exec": [
+							"pm.test('HTTP 503 Service Unavailable', function () { pm.response.to.have.status(503); });",
+							"pm.test('El mensaje menciona el servicio no disponible', function () {",
+							"    pm.expect(pm.response.json().message).to.include('no esta disponible');",
+							"});",
+							"pm.test('NO hay stack trace en la respuesta', function () {",
+							"    pm.expect(pm.response.text()).to.not.match(/at [a-zA-Z0-9_\\.]+\\(/);",
+							"});"
+						] }
+					}]
+				}
+			]
+		}
+	]
+}
