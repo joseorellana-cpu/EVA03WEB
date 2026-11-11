@@ -1,12 +1,9 @@
-import { useUsuarioStore } from '@/stores/usuarioStore'
-
 /**
  * Cliente HTTP único del frontend. NO existen otras capas de red.
  *
  * Reglas de seguridad (F01/F09/F12/F13/F14):
  *  - Todas las peticiones salen al MISMO ORIGEN (baseUrl vacía) o,
  *    en desarrollo, vía corredor de proxy de Vite (/api → 8080). Nunca a 8081/8082/8083.
- *  - Cabecera `X-Usuario` (identidad SIMULADA de laboratorio; falsificable y documentada).
  *  - Timeout de 10 s con AbortController.
  *  - JSON parseado de forma segura: cuerpo vacío (204) o JSON inválido => null.
  *  - Errores NORMALIZADOS a ErrorApi { status, message, details[], esRed, esServicioNoDisponible };
@@ -56,16 +53,11 @@ function normalizarError(status, cuerpo) {
 }
 
 export async function http(path, { method = 'GET', body } = {}) {
-  // Usuario simulado desde la memoria (Pinia) — nunca desde localStorage.
-  const usuarioStore = useUsuarioStore()
-  const usuario = usuarioStore.nombre || null
-
   const controlador = new AbortController()
   const temporizador = setTimeout(() => controlador.abort(), TIMEOUT_MS)
 
   const encabezados = {
     Accept: 'application/json',
-    ...(usuario ? { 'X-Usuario': usuario } : {}),
   }
   if (body !== undefined) {
     encabezados['Content-Type'] = 'application/json'

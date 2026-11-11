@@ -1,85 +1,48 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+import { useNotificacionesStore } from '@/stores/notificacionesStore'
+
+const nots = useNotificacionesStore()
+const anio = new Date().getFullYear()
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <div class="app-shell">
+    <div class="franja">Catálogo actualizado al momento · Precios en soles (S/)</div>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+    <header class="topbar">
+      <RouterLink to="/" class="brand">
+        <span class="brand__mark" aria-hidden="true">🛒</span>
+        <span class="brand__text">
+          <strong>La Tiendita</strong>
+          <small>Productos y proveedores</small>
+        </span>
+      </RouterLink>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+      <nav class="nav" aria-label="Navegación principal">
+        <RouterLink to="/" exact-active-class="activo">Tienda</RouterLink>
+        <RouterLink to="/productos" active-class="activo">Productos</RouterLink>
+        <RouterLink to="/proveedores" active-class="activo">Proveedores</RouterLink>
+        <RouterLink to="/compras" active-class="activo">Pedidos</RouterLink>
       </nav>
-    </div>
-  </header>
 
-  <RouterView />
+      <RouterLink to="/compras/nueva" class="btn btn--primary topbar__cta">+ Nuevo pedido</RouterLink>
+    </header>
+
+    <aside v-if="nots.mensajes.length" class="toasts" aria-live="polite">
+      <div v-for="m in nots.mensajes" :key="m.id" class="toast" :class="`toast--${m.tipo}`" role="status">
+        <span class="toast__texto">{{ m.texto }}</span>
+        <button type="button" class="toast__cerrar" aria-label="Descartar aviso" @click="nots.quitar(m.id)">×</button>
+      </div>
+    </aside>
+
+    <main class="contenido">
+      <RouterView />
+    </main>
+
+    <footer class="pie">
+      <span>© {{ anio }} La Tiendita</span>
+      <span>Hecho con Vue · Microservicios</span>
+    </footer>
+  </div>
 </template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
