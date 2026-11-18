@@ -136,6 +136,18 @@ class ProductoServiceImplTest {
         verify(productoRepository, never()).save(any());
     }
 
+    @Test
+    @DisplayName("crear con un código ya usado (en minúsculas y con espacios) lanza 409 sin guardar")
+    void crearConCodigoRepetidoNormalizado() {
+        when(productoRepository.existsByCodigo("PRD-001")).thenReturn(true);
+
+        ConflictoException excepcion = assertThrows(ConflictoException.class,
+                () -> service.crear(requestDe("  prd-001 ", 1L)));
+
+        assertTrue(excepcion.getMessage().contains("PRD-001"));
+        verify(productoRepository, never()).save(any());
+    }
+
     private Producto productoDeInventario(String codigo, int stock, int stockMinimo, Long proveedorId) {
         Producto producto = new Producto();
         producto.setId(1L);

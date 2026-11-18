@@ -9,6 +9,7 @@ import {
   longitudOpcional,
   validarUsuarioSimulado,
   validarNumeroCompra,
+  validarCodigoProducto,
 } from '@/utils/validators'
 
 describe('validators — RUC', () => {
@@ -99,5 +100,12 @@ describe('validators — usuario simulado', () => {
     expect(validarNumeroCompra('').ok).toBe(false)
     expect(validarNumeroCompra('C 2026').ok).toBe(false)
     expect(validarNumeroCompra('A'.repeat(21)).ok).toBe(false)
+  })
+
+  it('validarCodigoProducto: obligatorio, letras/números/guiones, máx 30', () => {
+    expect(validarCodigoProducto('PRD-007').ok).toBe(true)
+    expect(validarCodigoProducto('').ok).toBe(false)
+    expect(validarCodigoProducto('PRD 007').ok).toBe(false)
+    expect(validarCodigoProducto('A'.repeat(31)).ok).toBe(false)
   })
 })

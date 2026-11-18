@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productoApi } from '@/api/productoApi'
 import { proveedorApi } from '@/api/proveedorApi'
-import { validarPrecio, validarEnteroNoNegativo, longitudObligatoria, longitudOpcional } from '@/utils/validators'
+import { validarPrecio, validarEnteroNoNegativo, longitudObligatoria, longitudOpcional, validarCodigoProducto } from '@/utils/validators'
 import { parsearMonto, formatoApi } from '@/utils/money'
 import FormErroresServidor from '@/components/FormErroresServidor.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
@@ -64,7 +64,7 @@ onMounted(cargar)
 
 function validarFormulario() {
   Object.keys(errores).forEach((k) => delete errores[k])
-  const cod = longitudObligatoria(datos.codigo, 30, 'el código')
+  const cod = validarCodigoProducto(datos.codigo)
   if (!cod.ok) errores.codigo = cod.mensaje
   const nom = longitudObligatoria(datos.nombre, 150, 'el nombre')
   if (!nom.ok) errores.nombre = nom.mensaje
@@ -87,7 +87,7 @@ async function guardar() {
   enviando.value = true
   errorServidor.value = null
   const precioParsed = parsearMonto(datos.precio)
-  const cuerpo = { ...datos, precio: formatoApi(precioParsed.centavos) }
+  const cuerpo = { ...datos, codigo: datos.codigo.trim().toUpperCase(), precio: formatoApi(precioParsed.centavos) }
   try {
     if (esEdicion.value) {
       await productoApi.actualizar(ruta.params.id, cuerpo)
@@ -115,9 +115,11 @@ async function guardar() {
     <form v-else class="formulario" novalidate @submit.prevent="guardar">
       <div class="campo">
         <label for="codigo">Código *</label>
-        <input id="codigo" v-model.trim="datos.codigo" maxlength="30" required
-          :aria-invalid="!!errores.codigo" @input="limpiar('codigo')" />
-        <small v-if="errores.codigo" class="campo__error" role="alert">{{ errores.codigo }}</small>
+        <input id="codigo" v-model.trim="datos.codigo" maxlength="30" required placeholder="Ej. PRD-007"
+          :aria-invalid="!!errores.codigo" :aria-describedby="errores.codigo ? 'codigo-error' : 'codigo-ayuda'"
+          @input="limpiar('codigo')" />
+        <small v-if="errores.codigo" id="codigo-error" class="campo__error" role="alert">{{ errores.codigo }}</small>
+        <small v-else id="codigo-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
       </div>
 
       <div class="campo">

@@ -98,6 +98,18 @@ export function validarNumeroCompra(valor) {
   return { ok: true, mensaje: null }
 }
 
+const CODIGO_PRODUCTO_RE = /^[A-Za-z0-9-]{1,30}$/
+
+/** Código de producto escrito por el usuario (espejo del @Pattern de ms-producto). */
+export function validarCodigoProducto(valor) {
+  const s = String(valor ?? '').trim()
+  if (!s) return { ok: false, mensaje: 'El código es obligatorio' }
+  if (!CODIGO_PRODUCTO_RE.test(s)) {
+    return { ok: false, mensaje: 'El código solo admite letras, números y guiones (máx. 30)' }
+  }
+  return { ok: true, mensaje: null }
+}
+
 export function validarUsuarioSimulado(valor) {
   const s = String(valor ?? '').trim().toLowerCase()
   return /^[a-z0-9][a-z0-9._-]{2,39}$/.test(s)

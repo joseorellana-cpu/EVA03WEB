@@ -65,11 +65,13 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional
     public ProductoResponse crear(ProductoRequest request) {
-        if (repository.existsByCodigo(request.codigo())) {
-            throw new ConflictoException("Ya existe un producto con el código " + request.codigo());
+        String codigo = normalizarCodigo(request.codigo());
+        if (repository.existsByCodigo(codigo)) {
+            throw new ConflictoException("Ya existe un producto con el código " + codigo);
         }
         validarProveedorActivo(request.proveedorId());
         Producto producto = ProductoMapper.toEntity(request);
+        producto.setCodigo(codigo);
         return ProductoMapper.toDto(repository.save(producto));
     }
 
@@ -99,11 +101,12 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional
     public ProductoResponse actualizar(Long id, ProductoRequest request) {
         Producto producto = buscarPorId(id);
-        if (repository.existsByCodigoAndIdNot(request.codigo(), id)) {
-            throw new ConflictoException("El código " + request.codigo() + " ya pertenece a otro producto");
+        String codigo = normalizarCodigo(request.codigo());
+        if (repository.existsByCodigoAndIdNot(codigo, id)) {
+            throw new ConflictoException("El código " + codigo + " ya pertenece a otro producto");
         }
         validarProveedorActivo(request.proveedorId());
-        producto.setCodigo(request.codigo());
+        producto.setCodigo(codigo);
         producto.setNombre(request.nombre());
         producto.setDescripcion(request.descripcion());
         producto.setPrecio(request.precio());
@@ -210,5 +213,10 @@ public class ProductoServiceImpl implements ProductoService {
         return repository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el producto con id " + id));
+    }
+
+    /** El código lo escribe el usuario: se guarda sin espacios y en mayúsculas (prd-001 == PRD-001). */
+    private String normalizarCodigo(String codigo) {
+        return codigo == null ? null : codigo.trim().toUpperCase();
     }
 }

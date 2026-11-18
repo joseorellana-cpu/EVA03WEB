@@ -6,6 +6,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -16,6 +17,8 @@ import jakarta.validation.constraints.Size;
 public record ProductoRequest(
         @NotBlank(message = "el código es obligatorio")
         @Size(max = 30, message = "el código no debe exceder 30 caracteres")
+        @Pattern(regexp = "^\\s*[A-Za-z0-9-]+\\s*$",
+                message = "el código solo admite letras, números y guiones")
         String codigo,
 
         @NotBlank(message = "el nombre es obligatorio")
