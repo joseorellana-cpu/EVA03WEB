@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { compraApi } from '@/api/compraApi'
-import { formatearFecha, etiquetaEstado, claseEstado } from '@/utils/formatters'
+import { formatearFecha, etiquetaEstado, claseEstado, soles } from '@/utils/formatters'
 import { formatoMonto, parsearMonto } from '@/utils/money'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
@@ -93,7 +93,7 @@ async function alConfirmar() {
         <p><strong>{{ compra.numeroCompra }}</strong> ·
           <span :class="claseEstado(compra.estado)">{{ etiquetaEstado(compra.estado) }}</span></p>
         <p>Proveedor: {{ compra.proveedorId }} · Fecha: {{ formatearFecha(compra.fecha) }}</p>
-        <p>Total: <strong>{{ compra.total }}</strong> · Creado por: {{ compra.creadoPor ?? '—' }}</p>
+        <p>Total: <strong>{{ soles(compra.total) }}</strong> · Creado por: {{ compra.creadoPor ?? '—' }}</p>
         <p v-if="compra.observaciones">Observaciones: {{ compra.observaciones }}</p>
       </div>
 
@@ -112,8 +112,8 @@ async function alConfirmar() {
             <tr v-for="(d, i) in compra.detalles" :key="d.id ?? i">
               <td>{{ d.productoId }}</td>
               <td>{{ d.cantidad }}</td>
-              <td>{{ d.precioUnitario }}</td>
-              <td>{{ d.subtotal }}</td>
+              <td>{{ soles(d.precioUnitario) }}</td>
+              <td>{{ soles(d.subtotal) }}</td>
             </tr>
             <tr v-if="!compra.detalles?.length"><td colspan="4" class="tabla__vacio">Sin detalles.</td></tr>
           </tbody>

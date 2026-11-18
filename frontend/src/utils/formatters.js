@@ -14,6 +14,13 @@ export function formatearFecha(valor) {
   return Number.isNaN(fecha.getTime()) ? '—' : fechaHora.format(fecha)
 }
 
+/** Monto en soles para mostrar: 24.5 -> "S/ 24.50". El backend manda montos con 2 decimales. */
+export function soles(valor) {
+  if (valor === null || valor === undefined || valor === '') return '—'
+  const n = Number(valor)
+  return Number.isFinite(n) ? `S/ ${n.toFixed(2)}` : '—'
+}
+
 const ETIQUETAS = {
   REGISTRADA: 'REGISTRADA',
   CONFIRMADA: 'CONFIRMADA',

@@ -723,7 +723,14 @@ textarea {
 
 @media (max-width: 720px) {
   .topbar { gap: 0.75rem; }
-  .nav { margin-left: 0; width: 100%; overflow-x: auto; }
+  .nav { margin-left: 0; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
   .topbar__cta { display: none; }
   .hero { padding: 1.75rem 1.25rem; }
+  .productos-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+  .producto__foto { aspect-ratio: 1 / 1; font-size: 2.2rem; }
+  .producto__cuerpo { padding: 0.7rem 0.75rem 0.8rem; }
+  .producto__precio { font-size: 1.05rem; }
+  .producto__pie { flex-wrap: wrap; gap: 0.15rem 0.5rem; }
+  .producto__acciones { flex-direction: column; gap: 0.4rem; }
 }

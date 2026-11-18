@@ -73,7 +73,7 @@ async function cambiarEstado(p) {
           <option>INACTIVO</option>
         </select>
       </label>
-      <button type="button" @click="cargar">Recargar</button>
+      <button type="button" class="btn" @click="cargar">Recargar</button>
     </div>
 
     <p v-if="cargando" class="estado-vacio">Cargando proveedores…</p>

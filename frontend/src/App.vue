@@ -23,10 +23,10 @@ const anio = new Date().getFullYear()
         <RouterLink to="/" exact-active-class="activo">Tienda</RouterLink>
         <RouterLink to="/productos" active-class="activo">Productos</RouterLink>
         <RouterLink to="/proveedores" active-class="activo">Proveedores</RouterLink>
-        <RouterLink to="/compras" active-class="activo">Pedidos</RouterLink>
+        <RouterLink to="/compras" active-class="activo">Compras</RouterLink>
       </nav>
 
-      <RouterLink to="/compras/nueva" class="btn btn--primary topbar__cta">+ Nuevo pedido</RouterLink>
+      <RouterLink to="/compras/nueva" class="btn btn--primary topbar__cta">+ Nueva compra</RouterLink>
     </header>
 
     <aside v-if="nots.mensajes.length" class="toasts" aria-live="polite">

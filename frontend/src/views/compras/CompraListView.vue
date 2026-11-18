@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { compraApi } from '@/api/compraApi'
 import { proveedorApi } from '@/api/proveedorApi'
-import { etiquetaEstado, claseEstado, formatearFecha } from '@/utils/formatters'
+import { etiquetaEstado, claseEstado, formatearFecha, soles } from '@/utils/formatters'
 import BotonAccion from '@/components/BotonAccion.vue'
 
 const compras = ref([])
@@ -98,7 +98,7 @@ async function anular(c) {
           <option>ANULADA</option>
         </select>
       </label>
-      <button type="button" @click="cargar">Recargar</button>
+      <button type="button" class="btn" @click="cargar">Recargar</button>
     </div>
 
     <p v-if="cargando" class="estado-vacio">Cargando compras…</p>
@@ -127,7 +127,7 @@ async function anular(c) {
             <td>{{ c.proveedorId }}</td>
             <td>{{ formatearFecha(c.fecha) }}</td>
             <td><span :class="claseEstado(c.estado)">{{ etiquetaEstado(c.estado) }}</span></td>
-            <td>{{ c.total }}</td>
+            <td>{{ soles(c.total) }}</td>
             <td>{{ c.creadoPor || '—' }}</td>
             <td class="acciones">
               <BotonAccion

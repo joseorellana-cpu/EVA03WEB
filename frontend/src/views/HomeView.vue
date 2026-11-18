@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { productoApi } from '@/api/productoApi'
 import { proveedorApi } from '@/api/proveedorApi'
+import { soles } from '@/utils/formatters'
 
 const productos = ref([])
 const proveedores = ref([])
@@ -45,11 +46,6 @@ const visibles = computed(() => {
   })
 })
 
-const precio = (v) => {
-  const n = Number(v)
-  return Number.isFinite(n) ? `S/ ${n.toFixed(2)}` : '—'
-}
-
 const inicial = (nombre) => String(nombre ?? '?').trim().charAt(0).toUpperCase() || '?'
 
 // Color estable por categoría para la "foto" de la tarjeta
@@ -67,7 +63,7 @@ const tono = (texto) => {
       <div class="hero__texto">
         <p class="hero__eyebrow">Bienvenido</p>
         <h1>Todo lo que necesitas, en un solo lugar</h1>
-        <p>Explora nuestro catálogo, revisa el stock disponible y registra pedidos a nuestros proveedores.</p>
+        <p>Explora nuestro catálogo, revisa el stock disponible y registra compras a nuestros proveedores.</p>
         <div class="hero__acciones">
           <a href="#catalogo" class="btn btn--primary">Ver catálogo</a>
           <RouterLink to="/proveedores" class="btn">Nuestros proveedores</RouterLink>
@@ -118,7 +114,7 @@ const tono = (texto) => {
           <h3 class="producto__nombre">{{ p.nombre }}</h3>
           <small v-if="nombreProveedor(p.proveedorId)" class="producto__prov">por {{ nombreProveedor(p.proveedorId) }}</small>
           <div class="producto__pie">
-            <span class="producto__precio">{{ precio(p.precio) }}</span>
+            <span class="producto__precio">{{ soles(p.precio) }}</span>
             <span class="producto__stock">{{ p.stock }} en stock</span>
           </div>
           <div class="producto__acciones">

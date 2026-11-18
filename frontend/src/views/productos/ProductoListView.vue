@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { productoApi } from '@/api/productoApi'
 import { proveedorApi } from '@/api/proveedorApi'
-import { etiquetaEstado, claseEstado } from '@/utils/formatters'
+import { etiquetaEstado, claseEstado, soles } from '@/utils/formatters'
 import BotonAccion from '@/components/BotonAccion.vue'
 
 const productos = ref([])
@@ -87,7 +87,7 @@ async function cambiarEstado(p) {
           <option>INACTIVO</option>
         </select>
       </label>
-      <button type="button" @click="cargar">Recargar</button>
+      <button type="button" class="btn" @click="cargar">Recargar</button>
     </div>
 
     <p v-if="cargando" class="estado-vacio">Cargando productos…</p>
@@ -116,7 +116,7 @@ async function cambiarEstado(p) {
             <td>{{ p.codigo }}</td>
             <td>{{ p.nombre }}</td>
             <td>{{ p.categoria || '—' }}</td>
-            <td>{{ p.precio }}</td>
+            <td>{{ soles(p.precio) }}</td>
             <td>{{ p.stock }}</td>
             <td><span v-if="p.bajoStockMinimo" class="badge badge--warn">Sí</span><span v-else>—</span></td>
             <td><span :class="claseEstado(p.estado)">{{ etiquetaEstado(p.estado) }}</span></td>
