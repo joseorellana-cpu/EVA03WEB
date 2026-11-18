@@ -40,6 +40,7 @@ function mountView() {
 
 describe('CompraNuevaView — contrato de la petición (C4)', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     setActivePinia(createPinia())
     proveedorApi.listar.mockResolvedValue(proveedoresActivos)
     productoApi.listarPorProveedor.mockResolvedValue(productosProveedor)
@@ -56,6 +57,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
   it('NUNCA envía total, estado ni creadoPor en el body (contrato del backend)', async () => {
     const wrapper = await montarListo()
 
+    await wrapper.find('#numeroCompra').setValue('c-2026-000010')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -71,13 +73,14 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
 
-    await wrapper.find('.btn--primary').trigger('click')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
     await wrapper.vm.$nextTick()
 
     expect(compraApi.crear).toHaveBeenCalledTimes(1)
     const cuerpo = compraApi.crear.mock.calls[0][0]
     expect(cuerpo).toEqual({
+      numeroCompra: 'C-2026-000010',
       proveedorId: 1,
       observaciones: null,
       detalles: [{ productoId: 1, cantidad: 2, precioUnitario: '95.00' }],
@@ -90,6 +93,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
 
   it('calcula el total ESTIMADO en el frontend con centavos (etiqueta avisada)', async () => {
     const wrapper = await montarListo()
+    await wrapper.find('#numeroCompra').setValue('c-2026-000010')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -108,6 +112,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
 
   it('bloquea productos repetidos antes de enviar', async () => {
     const wrapper = await montarListo()
+    await wrapper.find('#numeroCompra').setValue('c-2026-000010')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -130,7 +135,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
       .at(3)
       .setValue('10.00')
 
-    await wrapper.find('.btn--primary').trigger('click')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
     await wrapper.vm.$nextTick()
 
@@ -138,8 +143,26 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
     expect(wrapper.find('.alerta--warn').exists()).toBe(true)
   })
 
+  it('exige el número de compra escrito por el usuario (no es automático)', async () => {
+    const wrapper = await montarListo()
+    await wrapper.find('#proveedorId').setValue(1)
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findAll('.tabla--linea tbody tr input')[0].setValue('1')
+    await wrapper.findAll('.tabla--linea select')[0].setValue(1)
+    await wrapper.findAll('.tabla--linea tbody tr input').at(1).setValue('10.00')
+
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(compraApi.crear).not.toHaveBeenCalled()
+    expect(wrapper.find('#numero-error').text()).toContain('obligatorio')
+  })
+
   it('total estimado en centavos con etiqueta "est."', async () => {
     const wrapper = await montarListo()
+    await wrapper.find('#numeroCompra').setValue('c-2026-000010')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -157,6 +180,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
 
   it('el cuerpo enviado incluye solo lo permitido (sin total/estado/creadoPor/subtotal)', async () => {
     const wrapper = await montarListo()
+    await wrapper.find('#numeroCompra').setValue('c-2026-000010')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()
@@ -170,13 +194,13 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
 
     await wrapper.vm.$nextTick()
     await wrapper.vm.$nextTick()
-    await wrapper.find('.btn--primary').trigger('click')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
     await wrapper.vm.$nextTick()
 
     expect(compraApi.crear).toHaveBeenCalledTimes(1)
     const cuerpo = compraApi.crear.mock.calls[0][0]
-    expect(Object.keys(cuerpo).sort()).toEqual(['detalles', 'observaciones', 'proveedorId'])
+    expect(Object.keys(cuerpo).sort()).toEqual(['detalles', 'numeroCompra', 'observaciones', 'proveedorId'])
     expect(cuerpo.detalles[0]).toEqual({ productoId: 1, cantidad: 2, precioUnitario: '95.00' })
   })
 })

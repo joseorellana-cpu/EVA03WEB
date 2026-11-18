@@ -73,6 +73,7 @@ class AuditoriaCompraTest {
                 .thenAnswer(inv -> productoDe(11L, 97));        /* ---- 1) registrar: no descuenta ---- */
         String cuerpo = """
                 {
+                  "numeroCompra": "aud-test-001",
                   "proveedorId": 1,
                   "observaciones": "Compra para auditoria",
                   "detalles": [ { "productoId": 11, "cantidad": 3, "precioUnitario": 12.50 } ]
@@ -84,6 +85,7 @@ class AuditoriaCompraTest {
                         .content(cuerpo))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.estado").value("REGISTRADA"))
+                .andExpect(jsonPath("$.numeroCompra").value("AUD-TEST-001"))
                 .andExpect(jsonPath("$.total").value(37.50))
                 .andExpect(jsonPath("$.creadoPor").value("jose.orellana"))
                 .andReturn().getResponse().getContentAsString();

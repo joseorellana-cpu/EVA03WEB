@@ -258,6 +258,7 @@ footer b{ color:var(--neon); }
     <div class="runner-controls">
       <div class="field"><label for="rProveedorId">proveedorId</label><input id="rProveedorId" type="number" value="1" min="1"></div>
       <div class="field"><label for="rProductoId">productoId</label><input id="rProductoId" type="number" value="1" min="1"></div>
+      <div class="field"><label for="rNumero">numeroCompra</label><input id="rNumero" type="text" maxlength="20" placeholder="Ej. C-2026-000010" pattern="[A-Za-z0-9-]{1,20}"></div>
       <div class="field"><label for="rCantidad">cantidad</label><input id="rCantidad" type="number" value="3" min="1"></div>
       <div class="field"><label for="rPrecio">precioUnitario</label><input id="rPrecio" type="number" value="12.50" min="0.01" step="0.01"></div>
       <div class="field"><label for="rObs">observaciones</label><input id="rObs" type="text" maxlength="300" value="Runner del panel"></div>
@@ -507,7 +508,7 @@ const API = {
 const BODY_EXAMPLES = {
   '/api/proveedores': '{"ruc":"20123456789","razonSocial":"Inversiones ACME S.A.C.","nombreComercial":"ACME","email":"contacto@acme.pe","telefono":"999888777","direccion":"Av. Industrial 123, Lima"}',
   '/api/productos':   '{"codigo":"PRD-009","nombre":"Aceite vegetal 1L","descripcion":"","precio":14.50,"stock":100,"stockMinimo":20,"categoria":"Abarrotes","proveedorId":1}',
-  '/api/compras':     '{"proveedorId":1,"observaciones":"Compra quincena","detalles":[{"productoId":1,"cantidad":3,"precioUnitario":95.00}]}',
+  '/api/compras':     '{"numeroCompra":"C-2026-000010","proveedorId":1,"observaciones":"Compra quincena","detalles":[{"productoId":1,"cantidad":3,"precioUnitario":95.00}]}',
 };
 const curlFor = (method, path) => {
   const url = `http://localhost:8080${path.replace('{id}','1').replace('{proveedorId}','1').replace('{ruc}','20123456789').split('?')[0]}`;
@@ -608,7 +609,7 @@ $('#step1Btn').addEventListener('click', async () => {
   const obs = $('#rObs').value;
   setStep('registrar','active');
   logLine(`POST /api/compras (cantidad=${+$('#rCantidad').value})`, 'log-info');
-  const res = await apiFetch('/api/compras', { method:'POST', json: { proveedorId: proveedorId(), observaciones: obs, detalles: [{ productoId: productoId(), cantidad: +$('#rCantidad').value, precioUnitario: +$('#rPrecio').value }] } });
+  const res = await apiFetch('/api/compras', { method:'POST', json: { numeroCompra: $('#rNumero').value.trim(), proveedorId: proveedorId(), observaciones: obs, detalles: [{ productoId: productoId(), cantidad: +$('#rCantidad').value, precioUnitario: +$('#rPrecio').value }] } });
   if (res.ok && res.body && res.body.id) { r.compraId = res.body.id; r.numero = res.body.numeroCompra; setStep('registrar','done'); logLine(`201 · ${res.body.numeroCompra} · total S/ ${res.body.total}`, 'log-ok'); logJson(res.body,'log-info'); $('#step2Btn').disabled = false; }
   else { setStep('registrar','pend'); logLine(`POST /api/compras → ${res.status}`, 'log-err'); logJson(res.body,'log-err'); }
 });

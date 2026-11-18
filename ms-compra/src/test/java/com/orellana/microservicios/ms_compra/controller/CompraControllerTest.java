@@ -47,6 +47,7 @@ class CompraControllerTest {
     void registrarSinDetalles() throws Exception {
         String cuerpo = """
                 {
+                  "numeroCompra": "C-2026-000099",
                   "proveedorId": 1,
                   "observaciones": "Compra invalida",
                   "detalles": []
@@ -77,6 +78,7 @@ class CompraControllerTest {
 
         String cuerpo = """
                 {
+                  "numeroCompra": "C-2026-000099",
                   "proveedorId": 1,
                   "observaciones": "Compra con servicio caido",
                   "detalles": [ { "productoId": 10, "cantidad": 3, "precioUnitario": 15.50 } ]
@@ -104,6 +106,7 @@ class CompraControllerTest {
 
         String cuerpo = """
                 {
+                  "numeroCompra": "C-2026-000099",
                   "proveedorId": 2,
                   "observaciones": "Compra con proveedor inactivo",
                   "detalles": [ { "productoId": 10, "cantidad": 3, "precioUnitario": 15.50 } ]

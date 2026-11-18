@@ -63,7 +63,7 @@ Por 3 vías consistentes: (1) el header `X-Usuario` llena `modificadoPor` de la 
 ### Guion de sustentación (5–8 minutos) — una Entity, un Repository, un Service, un Controller y el manejo de errores
 
 **Minuto 0:00–0:45 | Entity — `Compra`** (`ms-compra/src/main/java/com/orellana/microservicios/ms_compra/model/Compra.java`)
-Señala `@Entity @Table(name = "compras")`, los campos `numeroCompra` (formato `C-2026-000001` de `NumeroCompraGenerator`), `proveedorId` como `Long` (sin FK cruzada), `total` (`BigDecimal`), `estado` (`@Enumerated(EnumType.STRING)` → `REGISTRADA`/`CONFIRMADA`/`ANULADA`) y las relaciones: `detalles` con `@OneToMany(cascade = ALL, orphanRemoval = true)` mapeada por `@JoinColumn(name = "compra_id")`, y la `FK` interna a `compra_detalles` y `compra_auditoria`. Muestra que `AuditoriaBase` aporta `fechaCreacion`, `fechaModificacion`, `creadoPor`, `modificadoPor` — auditoría de la misma tabla, sin una tabla paralela.
+Señala `@Entity @Table(name = "compras")`, los campos `numeroCompra` (lo escribe el usuario al registrar; único, 409 si se repite), `proveedorId` como `Long` (sin FK cruzada), `total` (`BigDecimal`), `estado` (`@Enumerated(EnumType.STRING)` → `REGISTRADA`/`CONFIRMADA`/`ANULADA`) y las relaciones: `detalles` con `@OneToMany(cascade = ALL, orphanRemoval = true)` mapeada por `@JoinColumn(name = "compra_id")`, y la `FK` interna a `compra_detalles` y `compra_auditoria`. Muestra que `AuditoriaBase` aporta `fechaCreacion`, `fechaModificacion`, `creadoPor`, `modificadoPor` — auditoría de la misma tabla, sin una tabla paralela.
 
 **Minuto 0:45–1:30 | Repository — `CompraRepository`** (`.../ms-compra/repository/CompraRepository.java`)
 Extiende `JpaRepository<Compra, Long>`; muestra `findByProveedorId` (feed por proveedor), `existsByNumeroCompra` (respaldo de la unicidad de `numero_compra`), y `countByNumeroCompraStartingWith` (secuencial por año para el `C-2026-...` con reintento). Aclara que el lock pesimista NO está aquí: vive en ms-producto (`ProductoRepository.findByIdForUpdate`, SQL nativo `SELECT ... FOR UPDATE` que bloquea la fila y hace imposible el stock negativo por concurrencia). Puedes mencionar también que `StockMovimientoRepository` es el kardex (balance por transacción, `DESCONTAR`/`INCREMENTAR`, usuario y stock anterior/nuevo).
@@ -167,7 +167,7 @@ if (pedido.cantidad() > 1000) {
 | YAML con perfiles dev/prod (+test) en todos los servicios | Sí | `application.yaml`, `-dev.yaml`, `-test.yaml`, `-prod.yaml` (eureka-server y api-gateway sin YAML de BD) |
 | Referencias entre bases por IDs (no crecen todos resto de FKs cruzadas) | Sí | README §10.1–10.2 |
 | Prueba del Q flujo (registrar no descuenta, confirmar descuenta, anular devuelve) | Sí | carpeta 03 de la colección + test `AuditoriaCompraTest` |
-| Extras (auditoría de compra, número C-AAAA, compensación, extras de contrato de precio, estado de producto/proveedor) | Sí | README §10.6–10.9 |
+| Extras (auditoría de compra, número de compra escrito por el usuario, compensación, extras de contrato de precio, estado de producto/proveedor) | Sí | README §10.6–10.9 |
 | Prueba de aceptación oficial (ACEPTACION — proveedor 1; producto 1 × 10 @ 12.50; producto 2 × 2 @ 189.90) | Sí | carpeta `03B Aceptacion` de `postman/coleccion-global.json` (subtotales 125.00 / 379.80; total 504.80; SQL de verificación en el propio request y en README §9) |
 
 ### (d) "Lista antes de entregar"
@@ -178,7 +178,7 @@ if (pedido.cantidad() > 1000) {
 1. `mvnw.cmd -q test` en los 3 microservicios: **BUILD SUCCESS, 27 tests verdes** (7 + 10 + 11).
 2. Arrancar en orden: MySQL → Eureka → ms-proveedor → ms-producto → ms-compra → Gateway; totales de 5 apps con detalles y sin errores en el log de arranque.
 3. Captura de Eureka: las 3 apps UP (8081, 8082, 8083) + captura del dashboard.
-4. Captura de las 3 bases de datos en MySQL Workbench: tablas creadas con `sql/01_creacion_bases.sql` y datos demo; `compras` con `numero_compra` en formato C-2026-XXXXXX.
+4. Captura de las 3 bases de datos en MySQL Workbench: tablas creadas con `sql/01_creacion_bases.sql` y datos demo; `compras` con `numero_compra` escrito por el usuario (los datos demo usan C-2026-XXXXXX).
 5. Postman: ejecutar la colección en orden → **carpetas 01–03 verdes, carpeta 04 verde (los errores... "rojos pero esperados"), carpeta 05 verde con ms-producto detenido (503)**.
 6. Comprobar el flujo clave por el Gateway en vivo: stock antes = X → registrar = X → confirmar = X−cantidad → anular = X → auditoría con `X-Usuario: jose.orellana`.
 7. Verificar en `bd_compra` que cada cambio de estado dejó su fila en `compra_auditoria` con el nombre de usuario del header.

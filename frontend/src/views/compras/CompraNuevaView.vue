@@ -5,7 +5,7 @@ import { proveedorApi } from '@/api/proveedorApi'
 import { productoApi } from '@/api/productoApi'
 import { compraApi } from '@/api/compraApi'
 import { parsearMonto, sumarMontoCentavos, subtotal, formatoMonto, formatoApi } from '@/utils/money'
-import { validarCantidad, longitudOpcional } from '@/utils/validators'
+import { validarCantidad, longitudOpcional, validarNumeroCompra } from '@/utils/validators'
 import FormErroresServidor from '@/components/FormErroresServidor.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
 
@@ -15,6 +15,8 @@ const proveedores = ref([])
 const cargando = ref(true)
 const errorCarga = ref(null)
 
+const numeroCompra = ref('')
+const errorNumero = ref(null)
 const proveedorId = ref('')
 const observaciones = ref('')
 const errorObservaciones = ref(null)
@@ -109,6 +111,12 @@ function validarFormulario() {
   if (errorObservaciones.value) {
     errorServidor.value = { message: 'Revise los campos del formulario', details: [errorObservaciones.value] }
   }
+  const num = validarNumeroCompra(numeroCompra.value)
+  errorNumero.value = num.ok ? null : num.mensaje
+  if (!num.ok) {
+    errorServidor.value = { message: 'Revise los campos del formulario', details: [num.mensaje] }
+    return false
+  }
   // repetidos — bloquea el doble envío del mismo producto
   const vistos = new Set()
   for (const l of lineas.value) {
@@ -153,6 +161,7 @@ async function guardar() {
   enviando.value = true
   try {
     const cuerpo = {
+      numeroCompra: numeroCompra.value.trim().toUpperCase(),
       proveedorId: Number(proveedorId.value),
       observaciones: observaciones.value?.trim() || null,
       detalles: lineas.value.map((l) => ({
@@ -183,6 +192,15 @@ async function guardar() {
     <p v-else-if="errorCarga" class="alerta alerta--error" role="alert">{{ errorCarga.message }}</p>
 
     <form v-else class="formulario formulario--ancho" novalidate @submit.prevent="guardar">
+      <div class="campo">
+        <label for="numeroCompra">Número de compra *</label>
+        <input id="numeroCompra" v-model.trim="numeroCompra" maxlength="20" required placeholder="Ej. C-2026-000010"
+          :aria-invalid="!!errorNumero" :aria-describedby="errorNumero ? 'numero-error' : 'numero-ayuda'"
+          @input="errorNumero = null" />
+        <small v-if="errorNumero" id="numero-error" class="campo__error" role="alert">{{ errorNumero }}</small>
+        <small v-else id="numero-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
+      </div>
+
       <div class="campo">
         <label for="proveedorId">Proveedor (ACTIVO) *</label>
         <select id="proveedorId" v-model="proveedorId" required>

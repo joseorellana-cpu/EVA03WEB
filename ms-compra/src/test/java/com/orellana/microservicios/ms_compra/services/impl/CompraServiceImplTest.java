@@ -126,7 +126,7 @@ class CompraServiceImplTest {
         when(proveedorClient.obtenerProveedor(1L)).thenReturn(proveedorActivo());
         when(productoClient.obtenerProducto(10L)).thenReturn(productoDe(10L, 50));
 
-        var peticion = new CompraRequest(1L, null,
+        var peticion = new CompraRequest("C-2026-000001", 1L, null,
                 List.of(new DetalleRequest(10L, 3, new BigDecimal("15.50")),
                         new DetalleRequest(10L, 5, new BigDecimal("15.50"))));
 
@@ -179,10 +179,25 @@ class CompraServiceImplTest {
         assertEquals(EstadoCompra.REGISTRADA.name(), captor.getValue().getEstadoNuevo());
     }
 
+    @Test
+    @DisplayName("registrar con un numero de compra ya usado lanza 409 sin crear la compra")
+    void registrarConNumeroRepetido() {
+        when(compraRepository.existsByNumeroCompra("C-2026-000001")).thenReturn(true);
+
+        var peticion = new CompraRequest(" c-2026-000001 ", 1L, null,
+                List.of(new DetalleRequest(10L, 3, new BigDecimal("15.50"))));
+
+        ConflictoException excepcion = assertThrows(ConflictoException.class,
+                () -> service.registrar(peticion));
+
+        assertTrue(excepcion.getMessage().contains("ya existe"));
+        verify(compraRepository, never()).save(any());
+    }
+
     /* ==================== datos de prueba ==================== */
 
     private CompraRequest peticionDe(Long proveedorId, BigDecimal precio, int cantidad) {
-        return new CompraRequest(proveedorId, "Compra de prueba",
+        return new CompraRequest("C-2026-000001", proveedorId, "Compra de prueba",
                 List.of(new DetalleRequest(10L, cantidad, precio)));
     }
 

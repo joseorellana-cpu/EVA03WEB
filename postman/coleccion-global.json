@@ -255,7 +255,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"observaciones\": \"Compra del flujo completo\",\n  \"detalles\": [\n    { \"productoId\": {{productoId}}, \"cantidad\": {{cantidad}}, \"precioUnitario\": 15.50 }\n  ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-1\",\n  \"proveedorId\": {{proveedorId}},\n  \"observaciones\": \"Compra del flujo completo\",\n  \"detalles\": [\n    { \"productoId\": {{productoId}}, \"cantidad\": {{cantidad}}, \"precioUnitario\": 15.50 }\n  ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -264,8 +264,8 @@
 							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
 							"var json = pm.response.json();",
 							"pm.test('Estado inicial REGISTRADA', function () { pm.expect(json.estado).to.eql('REGISTRADA'); });",
-							"pm.test('El numero sigue el formato C-AAAA-NNNNNN', function () {",
-							"    pm.expect(json.numeroCompra).to.match(/^C-\\d{4}-\\d{6}$/);",
+							"pm.test('El numeroCompra es el escrito por el usuario (no se genera)', function () {",
+							"    pm.expect(json.numeroCompra).to.match(/^PM-\\d+-\\d+$/);",
 							"});",
 							"pm.test('El precioUnitario es el enviado por el cliente (15.50)', function () {",
 							"    pm.expect(Number(json.detalles[0].precioUnitario)).to.eql(15.50);",
@@ -460,7 +460,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": 1,\n  \"observaciones\": \"ACEPTACION - Compra con dos productos y total\",\n  \"detalles\": [\n    { \"productoId\": 1, \"cantidad\": 10, \"precioUnitario\": 12.50 },\n    { \"productoId\": 2, \"cantidad\": 2,  \"precioUnitario\": 189.90 }\n  ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-2\",\n  \"proveedorId\": 1,\n  \"observaciones\": \"ACEPTACION - Compra con dos productos y total\",\n  \"detalles\": [\n    { \"productoId\": 1, \"cantidad\": 10, \"precioUnitario\": 12.50 },\n    { \"productoId\": 2, \"cantidad\": 2,  \"precioUnitario\": 189.90 }\n  ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -469,7 +469,7 @@
 							"pm.test('HTTP 201 Creado', function () { pm.response.to.have.status(201); });",
 							"var json = pm.response.json();",
 							"pm.test('Estado inicial REGISTRADA', function () { pm.expect(json.estado).to.eql('REGISTRADA'); });",
-							"pm.test('numeroCompra con formato C-AAAA-NNNNNN', function () { pm.expect(json.numeroCompra).to.match(/^C-\\d{4}-\\d{6}$/); });",
+							"pm.test('numeroCompra es el enviado por el usuario', function () { pm.expect(json.numeroCompra).to.match(/^PM-\\d+-\\d+$/); });",
 							"pm.test('Detalle 1: producto 1, cantidad 10, precioUnitario 12.50', function () {",
 							"    pm.expect(json.detalles[0].productoId).to.eql(1);",
 							"    pm.expect(json.detalles[0].cantidad).to.eql(10);",
@@ -500,7 +500,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": []\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-3\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": []\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -527,7 +527,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 0, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-4\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 0, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -583,7 +583,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-5\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -620,7 +620,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 99999, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-6\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 99999, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -641,7 +641,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 }, { \"productoId\": {{productoId}}, \"cantidad\": 2, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-7\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 }, { \"productoId\": {{productoId}}, \"cantidad\": 2, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{
@@ -679,7 +679,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 5, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-8\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 5, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras/{{compraId}}", "host": ["{{baseUrl}}"], "path": ["api", "compras", "{{compraId}}"] }
 					},
 					"event": [{
@@ -750,7 +750,7 @@
 							{ "key": "X-Usuario", "value": "{{usuario}}", "type": "text" },
 							{ "key": "Content-Type", "value": "application/json" }
 						],
-						"body": { "mode": "raw", "raw": "{\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
+						"body": { "mode": "raw", "raw": "{\n  \"numeroCompra\": \"PM-{{$timestamp}}-9\",\n  \"proveedorId\": {{proveedorId}},\n  \"detalles\": [ { \"productoId\": {{productoId}}, \"cantidad\": 1, \"precioUnitario\": 15.50 } ]\n}" },
 						"url": { "raw": "{{baseUrl}}/api/compras", "host": ["{{baseUrl}}"], "path": ["api", "compras"] }
 					},
 					"event": [{

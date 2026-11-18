@@ -253,7 +253,7 @@ GET http://localhost:8080/api/compras/1/auditoria  → REGISTRADA, CONFIRMADA, A
 
 7. **Baja lógica en proveedor y producto.** El `DELETE` físico está protegido: el estado es `ACTIVO | INACTIVO` (PUT/PATCH), y las reglas de ms-compra solo aceptan entidades `ACTIVO`.
 
-8. **Extras sobre la guía base:** número de compra `C-2026-000001` (`NumeroCompraGenerator`, secuencial por año con respaldo de unique + reintento) y formatos de error/dto idénticos entre los 3 servicios. El **precioUnitario de compra lo envía el cliente** (`> 0`, máx 2 decimales) y **puede diferir del precio de referencia del catálogo** (`Producto.precio`); el precio de catálogo NO se copia a la compra.
+8. **Extras sobre la guía base:** número de compra **escrito por el usuario** (`numeroCompra` obligatorio en el POST/PUT: letras, números y guiones, máx. 20; se guarda en mayúsculas y si ya existe responde 409; respaldo con la unique de la tabla) y formatos de error/dto idénticos entre los 3 servicios. El **precioUnitario de compra lo envía el cliente** (`> 0`, máx 2 decimales) y **puede diferir del precio de referencia del catálogo** (`Producto.precio`); el precio de catálogo NO se copia a la compra.
 
 9. **Cambio en vivo preparado (sustentación):** la operación que `confirmar` aplica en ms-producto vive en **una sola constante**: `com.orellana.microservicios.ms_compra.services.impl.CompraServiceImpl.OPERACION_AL_CONFIRMAR` (`DESCONTAR`). Invertirla (`INCREMENTAR`) cambia el comportamiento de confirmar/anular **sin tocar el resto del código**, porque la anulación ya usa la inversa, no una operación hardcodeada.
 

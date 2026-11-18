@@ -8,6 +8,7 @@ import {
   longitudObligatoria,
   longitudOpcional,
   validarUsuarioSimulado,
+  validarNumeroCompra,
 } from '@/utils/validators'
 
 describe('validators — RUC', () => {
@@ -90,5 +91,13 @@ describe('validators — usuario simulado', () => {
     expect(validarUsuarioSimulado('ana reyes')).toBe(false)
     expect(validarUsuarioSimulado('a')).toBe(false)
     expect(validarUsuarioSimulado('hacker<script>')).toBe(false)
+  })
+
+  it('validarNumeroCompra: obligatorio, letras/números/guiones, máx 20', () => {
+    expect(validarNumeroCompra('C-2026-000010').ok).toBe(true)
+    expect(validarNumeroCompra('F001').ok).toBe(true)
+    expect(validarNumeroCompra('').ok).toBe(false)
+    expect(validarNumeroCompra('C 2026').ok).toBe(false)
+    expect(validarNumeroCompra('A'.repeat(21)).ok).toBe(false)
   })
 })

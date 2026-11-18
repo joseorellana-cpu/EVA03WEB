@@ -5,7 +5,7 @@ import { proveedorApi } from '@/api/proveedorApi'
 import { productoApi } from '@/api/productoApi'
 import { compraApi } from '@/api/compraApi'
 import { parsearMonto, subtotal, formatoMonto, formatoApi } from '@/utils/money'
-import { validarCantidad, longitudOpcional } from '@/utils/validators'
+import { validarCantidad, longitudOpcional, validarNumeroCompra } from '@/utils/validators'
 import FormErroresServidor from '@/components/FormErroresServidor.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
 
@@ -20,6 +20,8 @@ const proveedores = ref([])
 const productos = ref([])
 const cargandoProductos = ref(false)
 
+const numeroCompra = ref('')
+const errorNumero = ref(null)
 const proveedorId = ref('')
 const observaciones = ref('')
 const errorObservaciones = ref(null)
@@ -35,6 +37,7 @@ onMounted(async () => {
   try {
     const c = await compraApi.obtener(ruta.params.id)
     compra.value = c
+    numeroCompra.value = c.numeroCompra ?? ''
     proveedorId.value = c.proveedorId
     observaciones.value = c.observaciones ?? ''
     lineas.value = (c.detalles || []).map((d) => ({
@@ -100,6 +103,12 @@ const totalEstimadoCentavos = computed(() => {
 
 function validarFormulario() {
   errorServidor.value = null
+  const num = validarNumeroCompra(numeroCompra.value)
+  errorNumero.value = num.ok ? null : num.mensaje
+  if (!num.ok) {
+    errorServidor.value = { message: 'Revise los campos', details: [num.mensaje] }
+    return false
+  }
   const obs = longitudOpcional(observaciones.value, 300, 'las observaciones')
   if (!obs.ok) {
     errorObservaciones.value = obs.mensaje
@@ -148,6 +157,7 @@ async function guardar() {
   enviando.value = true
   try {
     const cuerpo = {
+      numeroCompra: numeroCompra.value.trim().toUpperCase(),
       proveedorId: Number(proveedorId.value),
       observaciones: observaciones.value?.trim() || null,
       detalles: lineas.value.map((l) => ({
@@ -180,6 +190,15 @@ async function guardar() {
     </p>
 
     <form v-else class="formulario formulario--ancho" novalidate @submit.prevent="guardar">
+      <div class="campo">
+        <label for="numeroCompra">Número de compra *</label>
+        <input id="numeroCompra" v-model.trim="numeroCompra" maxlength="20" required placeholder="Ej. C-2026-000010"
+          :aria-invalid="!!errorNumero" :aria-describedby="errorNumero ? 'numero-error' : 'numero-ayuda'"
+          @input="errorNumero = null" />
+        <small v-if="errorNumero" id="numero-error" class="campo__error" role="alert">{{ errorNumero }}</small>
+        <small v-else id="numero-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
+      </div>
+
       <div class="campo">
         <label for="proveedorId">Proveedor (ACTIVO) *</label>
         <select id="proveedorId" v-model="proveedorId" required>

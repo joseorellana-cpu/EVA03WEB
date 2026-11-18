@@ -8,8 +8,8 @@ import org.springframework.stereotype.Repository;
 import com.orellana.microservicios.ms_compra.model.Compra;
 
 /**
- * Persistencia de compras. countByNumeroCompraStartingWith alimenta
- * NumeroCompraGenerator (C-AAAA-NNNNNN).
+ * Persistencia de compras. existsByNumeroCompra valida que el numero
+ * escrito por el usuario no se repita.
  */
 @Repository
 public interface CompraRepository extends JpaRepository<Compra, Long> {
@@ -17,8 +17,7 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
     /** GET /api/compras/proveedor/{proveedorId} */
     List<Compra> findByProveedorId(Long proveedorId);
 
-    /** Respaldos del generador de números */
+    /** Unicidad del número de compra (409 si ya existe) */
     boolean existsByNumeroCompra(String numeroCompra);
 
-    long countByNumeroCompraStartingWith(String prefijo);
 }

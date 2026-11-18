@@ -15,6 +15,7 @@ export const LIMITES = {
   direccionMax: 200,
   categoriaMax: 80,
   observacionesMax: 300,
+  numeroCompraMax: 20,
   nombreProductoMax: 150,
   descripcionMax: 500,
   stockMax: 1_000_000,
@@ -82,6 +83,18 @@ export function longitudOpcional(valor, max, campo) {
   const s = String(valor ?? '').trim()
   if (!s) return { ok: true, mensaje: null }
   if (s.length > max) return { ok: false, mensaje: `El ${campo} no debe exceder ${max} caracteres` }
+  return { ok: true, mensaje: null }
+}
+
+const NUMERO_COMPRA_RE = /^[A-Za-z0-9-]{1,20}$/
+
+/** Número de compra escrito por el usuario (espejo del @Pattern del backend). */
+export function validarNumeroCompra(valor) {
+  const s = String(valor ?? '').trim()
+  if (!s) return { ok: false, mensaje: 'El número de compra es obligatorio' }
+  if (!NUMERO_COMPRA_RE.test(s)) {
+    return { ok: false, mensaje: 'El número de compra solo admite letras, números y guiones (máx. 20)' }
+  }
   return { ok: true, mensaje: null }
 }
 

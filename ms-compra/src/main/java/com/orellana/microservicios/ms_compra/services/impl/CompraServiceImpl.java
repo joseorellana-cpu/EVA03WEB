@@ -38,7 +38,6 @@ import com.orellana.microservicios.ms_compra.model.Compra;
 import com.orellana.microservicios.ms_compra.model.CompraAuditoria;
 import com.orellana.microservicios.ms_compra.model.CompraDetalle;
 import com.orellana.microservicios.ms_compra.model.EstadoCompra;
-import com.orellana.microservicios.ms_compra.model.NumeroCompraGenerator;
 import com.orellana.microservicios.ms_compra.model.OperacionStock;
 import com.orellana.microservicios.ms_compra.repository.CompraAuditoriaRepository;
 import com.orellana.microservicios.ms_compra.repository.CompraRepository;
@@ -97,11 +96,13 @@ public class CompraServiceImpl implements CompraService {
     @Override
     @Transactional
     public CompraResponse registrar(CompraRequest request) {
+        String numero = normalizarNumero(request.numeroCompra());
+        validarNumeroLibre(numero);
         validarProveedor(request.proveedorId());
         List<CompraDetalle> detalles = construirDetalles(request.proveedorId(), request.detalles());
 
         Compra compra = new Compra();
-        compra.setNumeroCompra(generarNumeroCompra());
+        compra.setNumeroCompra(numero);
         compra.setProveedorId(request.proveedorId());
         compra.setFecha(LocalDateTime.now());
         compra.setEstado(EstadoCompra.REGISTRADA);
@@ -125,9 +126,14 @@ public class CompraServiceImpl implements CompraService {
             throw new CompraNoModificableException(
                     "Solo una compra REGISTRADA puede modificarse (estado actual: " + compra.getEstado() + ")");
         }
+        String numero = normalizarNumero(request.numeroCompra());
+        if (!numero.equals(compra.getNumeroCompra())) {
+            validarNumeroLibre(numero);
+        }
         validarProveedor(request.proveedorId());
         List<CompraDetalle> detalles = construirDetalles(request.proveedorId(), request.detalles());
 
+        compra.setNumeroCompra(numero);
         compra.setProveedorId(request.proveedorId());
         compra.setObservaciones(request.observaciones());
         compra.limpiarDetalles();
@@ -360,21 +366,16 @@ public class CompraServiceImpl implements CompraService {
                         "La compra " + id + " no existe"));
     }
 
-    /**
-     * Genera el numero C-AAAA-NNNNNN: secuencial por ano sobre las compras
-     * existentes con ese prefijo; si colisiona (concurrencia), avanza hasta
-     * hallar uno libre. La unique de la columna respalda al final.
-     */
-    private String generarNumeroCompra() {
-        String anio = NumeroCompraGenerator.anioActual();
-        String prefijo = NumeroCompraGenerator.PREFIJO + anio + "-";
-        long secuencial = compraRepository.countByNumeroCompraStartingWith(prefijo) + 1;
-        String numero = NumeroCompraGenerator.siguiente(anio, secuencial);
-        while (compraRepository.existsByNumeroCompra(numero)) {
-            secuencial++;
-            numero = NumeroCompraGenerator.siguiente(anio, secuencial);
+    /** El numero de compra lo escribe el usuario: se guarda sin espacios y en mayusculas. */
+    private String normalizarNumero(String numero) {
+        return numero == null ? "" : numero.trim().toUpperCase();
+    }
+
+    /** Rechaza con 409 un numero de compra que ya existe (la unique de la tabla respalda). */
+    private void validarNumeroLibre(String numero) {
+        if (compraRepository.existsByNumeroCompra(numero)) {
+            throw new ConflictoException("El numero de compra " + numero + " ya existe");
         }
-        return numero;
     }
 
     private BigDecimal calcularTotal(List<CompraDetalle> detalles) {
