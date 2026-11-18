@@ -6,6 +6,7 @@ import { productoApi } from '@/api/productoApi'
 import { compraApi } from '@/api/compraApi'
 import { parsearMonto, sumarMontoCentavos, subtotal, formatoMonto, formatoApi } from '@/utils/money'
 import { validarCantidad, longitudOpcional, validarNumeroCompra } from '@/utils/validators'
+import { numeroCompraPorDefecto } from '@/utils/codigos'
 import FormErroresServidor from '@/components/FormErroresServidor.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
 
@@ -43,6 +44,13 @@ onMounted(async () => {
     errorCarga.value = e
   } finally {
     cargando.value = false
+  }
+  // Número por defecto (editable). Si no se puede consultar, el campo queda vacío.
+  try {
+    const compras = await compraApi.listar()
+    if (!numeroCompra.value) numeroCompra.value = numeroCompraPorDefecto(compras)
+  } catch {
+    /* sin sugerencia: el usuario lo escribe */
   }
 })
 
@@ -198,7 +206,7 @@ async function guardar() {
           :aria-invalid="!!errorNumero" :aria-describedby="errorNumero ? 'numero-error' : 'numero-ayuda'"
           @input="errorNumero = null" />
         <small v-if="errorNumero" id="numero-error" class="campo__error" role="alert">{{ errorNumero }}</small>
-        <small v-else id="numero-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
+        <small v-else id="numero-ayuda" class="campo__ayuda">Viene sugerido el siguiente número; puedes cambiarlo. Letras, números y guiones, sin repetir.</small>
       </div>
 
       <div class="campo">

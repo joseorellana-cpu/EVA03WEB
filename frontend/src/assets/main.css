@@ -721,6 +721,10 @@ textarea {
   color: var(--peligro);
 }
 
+@media (max-width: 960px) {
+  .topbar__cta { display: none; }
+}
+
 @media (max-width: 720px) {
   .topbar { gap: 0.75rem; }
   .nav { margin-left: 0; width: 100%; overflow-x: auto; scrollbar-width: none; }

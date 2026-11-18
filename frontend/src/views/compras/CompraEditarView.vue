@@ -196,7 +196,7 @@ async function guardar() {
           :aria-invalid="!!errorNumero" :aria-describedby="errorNumero ? 'numero-error' : 'numero-ayuda'"
           @input="errorNumero = null" />
         <small v-if="errorNumero" id="numero-error" class="campo__error" role="alert">{{ errorNumero }}</small>
-        <small v-else id="numero-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
+        <small v-else id="numero-ayuda" class="campo__ayuda">Puedes cambiarlo: letras, números y guiones, sin repetir.</small>
       </div>
 
       <div class="campo">

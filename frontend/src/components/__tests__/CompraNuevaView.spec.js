@@ -14,7 +14,7 @@ vi.mock('@/api/productoApi', () => ({
   productoApi: { listarPorProveedor: vi.fn() },
 }))
 vi.mock('@/api/compraApi', () => ({
-  compraApi: { crear: vi.fn() },
+  compraApi: { crear: vi.fn(), listar: vi.fn() },
 }))
 
 const proveedoresActivos = [
@@ -45,6 +45,7 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
     proveedorApi.listar.mockResolvedValue(proveedoresActivos)
     productoApi.listarPorProveedor.mockResolvedValue(productosProveedor)
     compraApi.crear.mockResolvedValue({ id: 9, numeroCompra: 'C-2026-000009' })
+    compraApi.listar.mockResolvedValue([])
   })
 
   async function montarListo() {
@@ -143,8 +144,15 @@ describe('CompraNuevaView — contrato de la petición (C4)', () => {
     expect(wrapper.find('.alerta--warn').exists()).toBe(true)
   })
 
-  it('exige el número de compra escrito por el usuario (no es automático)', async () => {
+  it('trae por defecto el siguiente número de compra, editable', async () => {
+    compraApi.listar.mockResolvedValue([{ numeroCompra: `C-${new Date().getFullYear()}-000005` }])
     const wrapper = await montarListo()
+    expect(wrapper.find('#numeroCompra').element.value).toBe(`C-${new Date().getFullYear()}-000006`)
+  })
+
+  it('exige el número de compra si el usuario lo borra', async () => {
+    const wrapper = await montarListo()
+    await wrapper.find('#numeroCompra').setValue('')
     await wrapper.find('#proveedorId').setValue(1)
     await flushPromises()
     await wrapper.vm.$nextTick()

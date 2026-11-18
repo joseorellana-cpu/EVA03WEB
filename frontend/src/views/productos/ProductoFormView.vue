@@ -5,6 +5,7 @@ import { productoApi } from '@/api/productoApi'
 import { proveedorApi } from '@/api/proveedorApi'
 import { validarPrecio, validarEnteroNoNegativo, longitudObligatoria, longitudOpcional, validarCodigoProducto } from '@/utils/validators'
 import { parsearMonto, formatoApi } from '@/utils/money'
+import { codigoProductoPorDefecto } from '@/utils/codigos'
 import FormErroresServidor from '@/components/FormErroresServidor.vue'
 import BotonAccion from '@/components/BotonAccion.vue'
 
@@ -52,6 +53,14 @@ async function cargar() {
         categoria: p.categoria ?? '',
         proveedorId: p.proveedorId,
       })
+    } else {
+      // Código por defecto (editable): siguiente PRD-NNN libre.
+      try {
+        const existentes = await productoApi.listar()
+        if (!datos.codigo) datos.codigo = codigoProductoPorDefecto(existentes)
+      } catch {
+        /* sin sugerencia: el usuario lo escribe */
+      }
     }
   } catch (e) {
     errorServidor.value = e
@@ -119,7 +128,7 @@ async function guardar() {
           :aria-invalid="!!errores.codigo" :aria-describedby="errores.codigo ? 'codigo-error' : 'codigo-ayuda'"
           @input="limpiar('codigo')" />
         <small v-if="errores.codigo" id="codigo-error" class="campo__error" role="alert">{{ errores.codigo }}</small>
-        <small v-else id="codigo-ayuda" class="campo__ayuda">Escríbelo tú: letras, números y guiones. No puede repetirse.</small>
+        <small v-else id="codigo-ayuda" class="campo__ayuda">{{ esEdicion ? 'Puedes cambiarlo' : 'Viene sugerido el siguiente código; puedes cambiarlo' }}: letras, números y guiones, sin repetir.</small>
       </div>
 
       <div class="campo">
